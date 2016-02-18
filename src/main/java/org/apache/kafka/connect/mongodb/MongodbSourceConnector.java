@@ -106,7 +106,7 @@ public class MongodbSourceConnector extends SourceConnector {
             config.put(SCHEMA_NAME, schemaName);
             config.put(BATCH_SIZE, batchSize);
             config.put(TOPIC_PREFIX, topicPrefix);
-            config.put(DATABASES, StringUtils.join(dbsGrouped, ","));
+            config.put(DATABASES, StringUtils.join(dbsGrouped.get(i), ","));
             configs.add(config);
         }
         return configs;

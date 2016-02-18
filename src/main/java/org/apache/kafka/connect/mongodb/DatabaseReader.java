@@ -11,6 +11,8 @@ import org.apache.kafka.connect.errors.ConnectException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.BSONTimestamp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -18,6 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author Andrea Patelli
  */
 public class DatabaseReader implements Runnable {
+    Logger log = LoggerFactory.getLogger(DatabaseReader.class);
     private String host;
     private Integer port;
     private String db;
@@ -39,6 +42,7 @@ public class DatabaseReader implements Runnable {
         } catch (ConnectException e) {
             throw e;
         }
+        log.trace("Starting from {}", start);
     }
 
     public void run() {
@@ -55,6 +59,7 @@ public class DatabaseReader implements Runnable {
                 .cursorType(CursorType.TailableAwait);
 
         for (Document document : documents) {
+            log.trace(document.toString());
             messages.add(document);
         }
     }

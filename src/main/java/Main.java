@@ -20,7 +20,7 @@ public class Main {
 
         MongoCollection<Document> oplog = db.getCollection("oplog.rs");
 
-        String t = "14557179622";
+        String t = "0";
         Long timestamp = Long.parseLong(t);
         Integer order = new Long(timestamp % 10).intValue();
         timestamp = timestamp / 10;

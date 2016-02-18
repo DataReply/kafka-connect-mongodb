@@ -29,6 +29,7 @@ public class MongodbReader {
         this.dbs = new ArrayList<>(0);
         this.dbs.addAll(dbs);
         this.start = start;
+        this.messages = new ConcurrentLinkedQueue<>();
     }
 
     public void run() {

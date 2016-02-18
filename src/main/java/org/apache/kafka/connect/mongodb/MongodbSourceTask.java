@@ -68,7 +68,8 @@ public class MongodbSourceTask extends SourceTask {
                     .field("order", Schema.OPTIONAL_INT32_SCHEMA)
                     .field("operation", Schema.OPTIONAL_STRING_SCHEMA)
                     .field("database", Schema.OPTIONAL_STRING_SCHEMA)
-                    .field("object", Schema.OPTIONAL_STRING_SCHEMA);
+                    .field("object", Schema.OPTIONAL_STRING_SCHEMA)
+                    .build();
         }
 
         loadOffsets();
@@ -86,8 +87,9 @@ public class MongodbSourceTask extends SourceTask {
             String db = getDB(message);
             String timestamp = getTimestamp(message);
             records.add(new SourceRecord(Collections.singletonMap("mongodb", db), Collections.singletonMap(db, timestamp), topic, messageStruct.schema(), messageStruct));
+            log.trace(message.toString());
         }
-        return null;
+        return records;
     }
 
     @Override
@@ -128,7 +130,7 @@ public class MongodbSourceTask extends SourceTask {
         messageStruct.put("order", order);
         messageStruct.put("operation", message.get("op"));
         messageStruct.put("database", message.get("ns"));
-        messageStruct.put("object", message.get("o"));
+        messageStruct.put("object", message.get("o").toString());
         return messageStruct;
     }
 
