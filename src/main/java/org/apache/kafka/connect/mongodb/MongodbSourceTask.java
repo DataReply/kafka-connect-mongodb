@@ -60,7 +60,7 @@ public class MongodbSourceTask extends SourceTask {
         databases = Arrays.asList(map.get(MongodbSourceConnector.DATABASES).split(","));
 
         log.trace("Creating schema");
-        if(schema == null) {
+        if (schema == null) {
             schema = SchemaBuilder
                     .struct()
                     .name(schemaName)
@@ -79,7 +79,7 @@ public class MongodbSourceTask extends SourceTask {
     @Override
     public List<SourceRecord> poll() throws InterruptException {
         List<SourceRecord> records = new ArrayList<>(0);
-        while(!reader.messages.isEmpty() && records.size() < batchSize) {
+        while (!reader.messages.isEmpty() && records.size() < batchSize) {
             Document message = reader.messages.poll();
             Struct messageStruct = getStruct(message);
             String topic = getTopic(message);
@@ -97,7 +97,7 @@ public class MongodbSourceTask extends SourceTask {
 
     private String getTopic(Document message) {
         String database = (String) message.get("ns");
-        if(topicPrefix != null && !topicPrefix.isEmpty()) {
+        if (topicPrefix != null && !topicPrefix.isEmpty()) {
             return new StringBuilder()
                     .append(topicPrefix)
                     .append("_")
@@ -133,8 +133,8 @@ public class MongodbSourceTask extends SourceTask {
     }
 
     private void loadOffsets() {
-       List<Map<String, String>> partitions = new ArrayList<>();
-        for(String db : databases) {
+        List<Map<String, String>> partitions = new ArrayList<>();
+        for (String db : databases) {
             Map<String, String> partition = Collections.singletonMap("mongodb", db);
             partitions.add(partition);
         }

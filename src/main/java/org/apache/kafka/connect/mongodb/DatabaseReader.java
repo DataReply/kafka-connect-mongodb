@@ -12,8 +12,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.BSONTimestamp;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -38,7 +36,7 @@ public class DatabaseReader implements Runnable {
         this.messages = messages;
         try {
             init();
-        } catch(ConnectException e) {
+        } catch (ConnectException e) {
             throw e;
         }
     }
@@ -56,7 +54,7 @@ public class DatabaseReader implements Runnable {
                 .projection(Projections.include("ts", "op", "ns", "o"))
                 .cursorType(CursorType.TailableAwait);
 
-        for(Document document : documents) {
+        for (Document document : documents) {
             messages.add(document);
         }
     }

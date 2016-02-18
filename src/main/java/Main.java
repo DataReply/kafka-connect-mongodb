@@ -5,13 +5,9 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import org.bson.BSON;
-import org.bson.BsonTimestamp;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.BSONTimestamp;
-
-import java.util.ArrayList;
 
 /**
  * Created by a.patelli on 15/02/2016.
@@ -29,8 +25,8 @@ public class Main {
         Integer order = new Long(timestamp % 10).intValue();
         timestamp = timestamp / 10;
 
-         Integer finalTimestamp = timestamp.intValue();
-         Integer finalOrder = order;
+        Integer finalTimestamp = timestamp.intValue();
+        Integer finalOrder = order;
 
 //        Document query = new Document(
 //                "$and",
@@ -70,8 +66,8 @@ public class Main {
                         Filters.eq("op", "i"),
                         Filters.eq("op", "u"),
                         Filters.eq("op", "d")
-                    )
-                );
+                )
+        );
 
         Document fields = new Document();
         fields.put("ts", 1);

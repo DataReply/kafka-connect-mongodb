@@ -99,7 +99,7 @@ public class MongodbSourceConnector extends SourceConnector {
         List<String> dbs = Arrays.asList(databases.split(","));
         int numGroups = Math.min(dbs.size(), maxTasks);
         List<List<String>> dbsGrouped = ConnectorUtils.groupPartitions(dbs, numGroups);
-        for(int i = 0; i < maxTasks; i++) {
+        for (int i = 0; i < maxTasks; i++) {
             Map<String, String> config = new HashMap<>();
             config.put(PORT, port);
             config.put(HOST, host);

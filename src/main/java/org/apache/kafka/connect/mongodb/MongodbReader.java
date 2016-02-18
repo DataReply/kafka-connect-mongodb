@@ -1,17 +1,6 @@
 package org.apache.kafka.connect.mongodb;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.CursorType;
-import com.mongodb.MongoClient;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.bson.types.BSONTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +32,19 @@ public class MongodbReader {
     }
 
     public void run() {
-        for(String db: dbs) {
-            String start = (String)this.start.get(Collections.singletonMap("mongodb", db)).get(db);
+        for (String db : dbs) {
+            String start;
+            Map<String, Object> dbOffset = this.start.get(Collections.singletonMap("mongodb", db));
+            if (dbOffset == null || dbOffset.isEmpty())
+                start = "0";
+            else
+                start = (String) this.start.get(Collections.singletonMap("mongodb", db)).get(db);
+
+            log.trace("Starting database reader with configuration: ");
+            log.trace("host: {}", host);
+            log.trace("port: {}", port);
+            log.trace("db: {}", db);
+            log.trace("start: {}", start);
             DatabaseReader reader = new DatabaseReader(host, port, db, start, messages);
             new Thread(reader).start();
         }
