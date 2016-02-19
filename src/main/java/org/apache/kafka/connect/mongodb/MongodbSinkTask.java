@@ -91,7 +91,6 @@ public class MongodbSinkTask extends SinkTask {
     @Override
     public void put(Collection<SinkRecord> collection) {
         List<SinkRecord> records = new ArrayList<>(collection);
-        log.error("GOT RECORDS {}", records.size());
         for (int i = 0; i < records.size(); i++) {
             Map<String, List<WriteModel<Document>>> bulks = new HashMap<>();
 
