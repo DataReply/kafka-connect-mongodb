@@ -5,6 +5,7 @@ import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceConnector;
 import org.apache.kafka.connect.util.ConnectorUtils;
+import org.apache.kafka.connect.utils.LogUtils;
 import org.apache.kafka.connect.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ public class MongodbSourceConnector extends SourceConnector {
 
         topicPrefix = map.get(TOPIC_PREFIX);
 
-        dumpConfiguration(map);
+        LogUtils.dumpConfiguration(map, log);
     }
 
     /**
@@ -119,10 +120,5 @@ public class MongodbSourceConnector extends SourceConnector {
     public void stop() {
     }
 
-    private void dumpConfiguration(Map<String, String> map) {
-        log.trace("Starting connector with configuration:");
-        for (Map.Entry entry : map.entrySet()) {
-            log.trace("{}: {}", entry.getKey(), entry.getValue());
-        }
-    }
+
 }

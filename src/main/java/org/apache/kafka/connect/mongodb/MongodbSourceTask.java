@@ -28,7 +28,7 @@ public class MongodbSourceTask extends SourceTask {
     private Integer batchSize;
     private String topicPrefix;
     private List<String> databases;
-    private static Schema schema = null;
+    private static Map<String, Schema> schemas = null;
 
     private MongodbReader reader;
 
@@ -66,16 +66,23 @@ public class MongodbSourceTask extends SourceTask {
         databases = Arrays.asList(map.get(MongodbSourceConnector.DATABASES).split(","));
 
         log.trace("Creating schema");
-        if (schema == null) {
-            schema = SchemaBuilder
-                    .struct()
-                    .name(schemaName)
-                    .field("timestamp", Schema.OPTIONAL_INT32_SCHEMA)
-                    .field("order", Schema.OPTIONAL_INT32_SCHEMA)
-                    .field("operation", Schema.OPTIONAL_STRING_SCHEMA)
-                    .field("database", Schema.OPTIONAL_STRING_SCHEMA)
-                    .field("object", Schema.OPTIONAL_STRING_SCHEMA)
-                    .build();
+        if (schemas == null) {
+            schemas = new HashMap<>();
+        }
+
+        for (String db : databases) {
+            db = db.replaceAll("[\\s.]", "_");
+            if (schemas.get(db) == null)
+                schemas.put(db,
+                        SchemaBuilder
+                                .struct()
+                                .name(schemaName.concat("_").concat(db))
+                                .field("timestamp", Schema.OPTIONAL_INT32_SCHEMA)
+                                .field("order", Schema.OPTIONAL_INT32_SCHEMA)
+                                .field("operation", Schema.OPTIONAL_STRING_SCHEMA)
+                                .field("database", Schema.OPTIONAL_STRING_SCHEMA)
+                                .field("object", Schema.OPTIONAL_STRING_SCHEMA)
+                                .build());
         }
 
         loadOffsets();
@@ -119,7 +126,7 @@ public class MongodbSourceTask extends SourceTask {
      * @return parsed String representing the topic
      */
     private String getTopic(Document message) {
-        String database = (String) message.get("ns");
+        String database = ((String) message.get("ns")).replaceAll("[\\s.]", "_");
         if (topicPrefix != null && !topicPrefix.isEmpty()) {
             return new StringBuilder()
                     .append(topicPrefix)
@@ -142,8 +149,8 @@ public class MongodbSourceTask extends SourceTask {
 
     /**
      * Calculates the timestamp of the message.
-     * @param message from which retrieve the timestamp
      *
+     * @param message from which retrieve the timestamp
      * @return BsonTimestamp formatted as a String (seconds+inc)
      */
     private String getTimestamp(Document message) {
@@ -156,10 +163,12 @@ public class MongodbSourceTask extends SourceTask {
 
     /**
      * Creates a struct from a Mongodb message.
+     *
      * @param message to parse
      * @return message formatted as a Struct
      */
     private Struct getStruct(Document message) {
+        Schema schema = schemas.get(getDB(message).replaceAll("[\\s.]", "_"));
         Struct messageStruct = new Struct(schema);
         BsonTimestamp bsonTimestamp = (BsonTimestamp) message.get("ts");
         Integer seconds = bsonTimestamp.getTime();
