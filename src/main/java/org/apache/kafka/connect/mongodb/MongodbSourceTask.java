@@ -35,11 +35,17 @@ public class MongodbSourceTask extends SourceTask {
 
     Map<Map<String, String>, Map<String, Object>> offsets = new HashMap<>(0);
 
+
     @Override
     public String version() {
-        return null;
+        return new MongodbSourceConnector().version();
     }
 
+    /**
+     * Start the Task. Handles configuration parsing and one-time setup of the Task.
+     *
+     * @param map initial configuration
+     */
     @Override
     public void start(Map<String, String> map) {
         try {
@@ -77,6 +83,12 @@ public class MongodbSourceTask extends SourceTask {
         reader.run();
     }
 
+    /**
+     * Poll this MongodbSourceTask for new records.
+     *
+     * @return a list of source records
+     * @throws InterruptException
+     */
     @Override
     public List<SourceRecord> poll() throws InterruptException {
         List<SourceRecord> records = new ArrayList<>(0);
@@ -92,11 +104,20 @@ public class MongodbSourceTask extends SourceTask {
         return records;
     }
 
+    /**
+     * Signal this SourceTask to stop
+     */
     @Override
     public void stop() {
 
     }
 
+    /**
+     * Retrieves a topic on which the message should be written.
+     *
+     * @param message from which retrieve the topic
+     * @return parsed String representing the topic
+     */
     private String getTopic(Document message) {
         String database = (String) message.get("ns");
         if (topicPrefix != null && !topicPrefix.isEmpty()) {
@@ -109,10 +130,22 @@ public class MongodbSourceTask extends SourceTask {
         return database;
     }
 
+    /**
+     * Retrieves the database from which the message has been read.
+     *
+     * @param message from which retrieve the database
+     * @return the database name, as a String
+     */
     private String getDB(Document message) {
         return (String) message.get("ns");
     }
 
+    /**
+     * Calculates the timestamp of the message.
+     * @param message from which retrieve the timestamp
+     *
+     * @return BsonTimestamp formatted as a String (seconds+inc)
+     */
     private String getTimestamp(Document message) {
         BsonTimestamp timestamp = (BsonTimestamp) message.get("ts");
         return new StringBuilder()
@@ -121,6 +154,11 @@ public class MongodbSourceTask extends SourceTask {
                 .toString();
     }
 
+    /**
+     * Creates a struct from a Mongodb message.
+     * @param message to parse
+     * @return message formatted as a Struct
+     */
     private Struct getStruct(Document message) {
         Struct messageStruct = new Struct(schema);
         BsonTimestamp bsonTimestamp = (BsonTimestamp) message.get("ts");
@@ -134,6 +172,9 @@ public class MongodbSourceTask extends SourceTask {
         return messageStruct;
     }
 
+    /**
+     * Loads the current saved offsets.
+     */
     private void loadOffsets() {
         List<Map<String, String>> partitions = new ArrayList<>();
         for (String db : databases) {

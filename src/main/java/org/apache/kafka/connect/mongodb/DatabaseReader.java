@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
+ * Reads mutation from a mongodb database
+ *
  * @author Andrea Patelli
  */
 public class DatabaseReader implements Runnable {
@@ -69,13 +71,24 @@ public class DatabaseReader implements Runnable {
         query = createQuery();
     }
 
+    /**
+     * Loads the oplog collection.
+     *
+     * @return the oplog collection
+     */
     private MongoCollection readCollection() {
         MongoClient mongoClient = new MongoClient(host, port);
         MongoDatabase db = mongoClient.getDatabase("local");
         return db.getCollection("oplog.rs");
     }
 
+    /**
+     * Creates the query to execute on the collection.
+     *
+     * @return the query
+     */
     private Bson createQuery() {
+        // timestamps are used as offsets, saved as a concatenation of seconds and order
         Long timestamp = Long.parseLong(start);
         Integer order = new Long(timestamp % 10).intValue();
         timestamp = timestamp / 10;

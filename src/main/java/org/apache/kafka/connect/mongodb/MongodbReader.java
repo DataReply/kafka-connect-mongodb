@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
+ * Class that creates a new DatabaseReader thread for every db
+ *
  * @author Andrea Patelli
  */
 public class MongodbReader {
@@ -33,8 +35,10 @@ public class MongodbReader {
     }
 
     public void run() {
+        // for every database to watch
         for (String db : dbs) {
             String start;
+            // get the last message that was read
             Map<String, Object> dbOffset = this.start.get(Collections.singletonMap("mongodb", db));
             if (dbOffset == null || dbOffset.isEmpty())
                 start = "0";
@@ -46,6 +50,7 @@ public class MongodbReader {
             log.trace("port: {}", port);
             log.trace("db: {}", db);
             log.trace("start: {}", start);
+            // start a new thread for reading mutation of the specific database
             DatabaseReader reader = new DatabaseReader(host, port, db, start, messages);
             new Thread(reader).start();
         }
