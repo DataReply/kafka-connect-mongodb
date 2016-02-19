@@ -17,6 +17,7 @@ and publishes it on Kafka.
 * Insert
 * Update
 * Delete
+
 For every message, a SourceRecord is created, having the following schema:
 ```json
 {
