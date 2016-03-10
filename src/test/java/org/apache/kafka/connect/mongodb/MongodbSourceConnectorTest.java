@@ -62,7 +62,6 @@ public class MongodbSourceConnectorTest {
         Assert.assertEquals("schema", taskConfigs.get(0).get("schema.name"));
         Assert.assertEquals("prefix", taskConfigs.get(0).get("topic.prefix"));
         Assert.assertEquals("mydb.test1,mydb.test2", taskConfigs.get(0).get("databases"));
-        System.out.println(taskConfigs.get(0).get("databases"));
 
         Assert.assertEquals("localhost", taskConfigs.get(1).get("host"));
         Assert.assertEquals("12345", taskConfigs.get(1).get("port"));

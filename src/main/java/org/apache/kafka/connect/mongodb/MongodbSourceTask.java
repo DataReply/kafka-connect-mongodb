@@ -108,6 +108,8 @@ public class MongodbSourceTask extends SourceTask {
             records.add(new SourceRecord(Collections.singletonMap("mongodb", db), Collections.singletonMap(db, timestamp), topic, messageStruct.schema(), messageStruct));
             log.trace(message.toString());
         }
+
+
         return records;
     }
 
@@ -116,7 +118,6 @@ public class MongodbSourceTask extends SourceTask {
      */
     @Override
     public void stop() {
-
     }
 
     /**

@@ -60,9 +60,13 @@ public class DatabaseReader implements Runnable {
                 .projection(Projections.include("ts", "op", "ns", "o"))
                 .cursorType(CursorType.TailableAwait);
 
-        for (Document document : documents) {
-            log.trace(document.toString());
-            messages.add(document);
+        try {
+            for (Document document : documents) {
+                log.trace(document.toString());
+                messages.add(document);
+            }
+        } catch(Exception e) {
+            log.error("Closed connection");
         }
     }
 
