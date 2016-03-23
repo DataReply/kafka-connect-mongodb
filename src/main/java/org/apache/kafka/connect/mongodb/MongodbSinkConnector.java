@@ -104,7 +104,7 @@ public class MongodbSinkConnector extends SinkConnector {
         List<String> topics = Arrays.asList(this.topics.split(","));
         List<List<String>> topicsGrouped = ConnectorUtils.groupPartitions(topics, numGroups);
 
-        for (int i = 0; i < maxTasks; i++) {
+        for (int i = 0; i < numGroups; i++) {
             Map<String, String> config = new HashMap<>();
             config.put(PORT, port);
             config.put(BULK_SIZE, bulkSize);
