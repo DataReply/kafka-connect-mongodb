@@ -49,21 +49,21 @@ public class MongodbSourceTask extends SourceTask {
     @Override
     public void start(Map<String, String> map) {
         try {
-            port = Integer.parseInt(map.get(MongodbSourceConnector.PORT));
+            port = Integer.parseInt(map.get(MongodbSourceConfig.PORT));
         } catch (Exception e) {
-            throw new ConnectException(MongodbSourceConnector.PORT + " config should be an Integer");
+            throw new ConnectException(MongodbSourceConfig.PORT + " config should be an Integer");
         }
 
         try {
-            batchSize = Integer.parseInt(map.get(MongodbSourceConnector.BATCH_SIZE));
+            batchSize = Integer.parseInt(map.get(MongodbSourceConfig.BATCH_SIZE));
         } catch (Exception e) {
-            throw new ConnectException(MongodbSourceConnector.BATCH_SIZE + " config should be an Integer");
+            throw new ConnectException(MongodbSourceConfig.BATCH_SIZE + " config should be an Integer");
         }
 
-        schemaName = map.get(MongodbSourceConnector.SCHEMA_NAME);
-        topicPrefix = map.get(MongodbSourceConnector.TOPIC_PREFIX);
-        host = map.get(MongodbSourceConnector.HOST);
-        databases = Arrays.asList(map.get(MongodbSourceConnector.DATABASES).split(","));
+        schemaName = map.get(MongodbSourceConfig.SCHEMA_NAME);
+        topicPrefix = map.get(MongodbSourceConfig.TOPIC_PREFIX);
+        host = map.get(MongodbSourceConfig.HOST);
+        databases = Arrays.asList(map.get(MongodbSourceConfig.DATABASES).split(","));
 
         log.trace("Creating schema");
         if (schemas == null) {

@@ -52,21 +52,21 @@ public class MongodbSinkTask extends SinkTask {
     @Override
     public void start(Map<String, String> map) {
         try {
-            port = Integer.parseInt(map.get(MongodbSinkConnector.PORT));
+            port = Integer.parseInt(map.get(MongodbSinkConfig.PORT));
         } catch (Exception e) {
-            throw new ConnectException("Setting " + MongodbSinkConnector.PORT + " should be an integer");
+            throw new ConnectException("Setting " + MongodbSinkConfig.PORT + " should be an integer");
         }
 
         try {
-            bulkSize = Integer.parseInt(map.get(MongodbSinkConnector.BULK_SIZE));
+            bulkSize = Integer.parseInt(map.get(MongodbSinkConfig.BULK_SIZE));
         } catch (Exception e) {
-            throw new ConnectException("Setting " + MongodbSinkConnector.BULK_SIZE + " should be an integer");
+            throw new ConnectException("Setting " + MongodbSinkConfig.BULK_SIZE + " should be an integer");
         }
 
-        database = map.get(MongodbSinkConnector.DATABASE);
-        host = map.get(MongodbSinkConnector.HOST);
-        collections = map.get(MongodbSinkConnector.COLLECTIONS);
-        topics = map.get(MongodbSinkConnector.TOPICS);
+        database = map.get(MongodbSinkConfig.DATABASE);
+        host = map.get(MongodbSinkConfig.HOST);
+        collections = map.get(MongodbSinkConfig.COLLECTIONS);
+        topics = map.get(MongodbSinkConfig.TOPICS);
 
         List<String> collectionsList = Arrays.asList(collections.split(","));
         List<String> topicsList = Arrays.asList(topics.split(","));

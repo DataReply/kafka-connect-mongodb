@@ -1,5 +1,6 @@
 package org.apache.kafka.connect.mongodb;
 
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -11,6 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.HOST;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.PORT;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.BULK_SIZE;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.TOPICS;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.DATABASE;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.COLLECTIONS;
 
 /**
  * MongodbSinkConnector implement the Connector interface to send Kafka
@@ -20,13 +27,6 @@ import java.util.*;
  */
 public class MongodbSinkConnector extends SinkConnector {
     private final static Logger log = LoggerFactory.getLogger(MongodbSinkConnector.class);
-
-    public static final String PORT = "port";
-    public static final String HOST = "host";
-    public static final String BULK_SIZE = "bulk.size";
-    public static final String DATABASE = "mongodb.database";
-    public static final String COLLECTIONS = "mongodb.collections";
-    public static final String TOPICS = "topics";
 
     private String port;
     private String host;
@@ -123,5 +123,10 @@ public class MongodbSinkConnector extends SinkConnector {
     @Override
     public void stop() {
 
+    }
+
+    @Override
+    public ConfigDef config () {
+        return null;
     }
 }

@@ -31,7 +31,7 @@ import java.util.*;
  */
 public class MongodbSourceTaskTest extends TestCase {
 
-    private static String REPLICATION_PATH = "/home/vagrant/mongo";
+    private static String REPLICATION_PATH = "/tmp/mongo";
     private MongodbSourceTask task;
     private SourceTaskContext context;
     private OffsetStorageReader offsetStorageReader;
