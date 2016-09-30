@@ -4,7 +4,7 @@ import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.mongodb.configuration.MongoDBSourceConfiguration;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.bson.BsonTimestamp;
@@ -12,65 +12,59 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * MongodbSourceTask is a Task that reads mutations from a mongodb for storage in Kafka.
+ * MongoDBSourceTask is a Task that reads mutations from a mongodb for storage in Kafka.
  *
  * @author Andrea Patelli
+ * @author Niraj Patel
  */
-public class MongodbSourceTask extends SourceTask {
-    private final static Logger log = LoggerFactory.getLogger(MongodbSourceTask.class);
+public class MongoDBSourceTask extends SourceTask {
+    private final static Logger log = LoggerFactory.getLogger(MongoDBSourceTask.class);
 
-    private Integer port;
-    private String host;
-    private String schemaName;
-    private Integer batchSize;
-    private String topicPrefix;
-    private List<String> databases;
     private static Map<String, Schema> schemas = null;
 
-    private MongodbReader reader;
+    private MongoDBReader reader;
 
+    private int batchSize;
+    private List<String> databases;
+    private String hosts;
+    private String schemaName;
+    private String topicPrefix;
 
     Map<Map<String, String>, Map<String, Object>> offsets = new HashMap<>(0);
 
 
     @Override
     public String version() {
-        return new MongodbSourceConnector().version();
+        return new MongoDBSourceConnector().version();
     }
 
     /**
      * Start the Task. Handles configuration parsing and one-time setup of the Task.
      *
-     * @param map initial configuration
+     * @param configuration initial configuration
      */
     @Override
-    public void start(Map<String, String> map) {
-        try {
-            port = Integer.parseInt(map.get(MongodbSourceConnector.PORT));
-        } catch (Exception e) {
-            throw new ConnectException(MongodbSourceConnector.PORT + " config should be an Integer");
-        }
-
-        try {
-            batchSize = Integer.parseInt(map.get(MongodbSourceConnector.BATCH_SIZE));
-        } catch (Exception e) {
-            throw new ConnectException(MongodbSourceConnector.BATCH_SIZE + " config should be an Integer");
-        }
-
-        schemaName = map.get(MongodbSourceConnector.SCHEMA_NAME);
-        topicPrefix = map.get(MongodbSourceConnector.TOPIC_PREFIX);
-        host = map.get(MongodbSourceConnector.HOST);
-        databases = Arrays.asList(map.get(MongodbSourceConnector.DATABASES).split(","));
+    public void start(Map<String, String> configuration) {
+        this.batchSize = Integer.parseInt(configuration.get(MongoDBSourceConfiguration.BATCH_SIZE_CONFIG));
+        this.databases = Arrays.asList(configuration.get(MongoDBSourceConfiguration.DATABASES_CONFIG).split(","));
+        this.hosts = configuration.get(MongoDBSourceConfiguration.HOST_URLS_CONFIG);
+        this.schemaName = configuration.get(MongoDBSourceConfiguration.SCHEMA_NAME_CONFIG);
+        this.topicPrefix = configuration.get(MongoDBSourceConfiguration.TOPIC_PREFIX_CONFIG);
 
         log.trace("Creating schema");
         if (schemas == null) {
             schemas = new HashMap<>();
         }
 
-        for (String db : databases) {
+        databases.stream().forEach(db -> {
             db = db.replaceAll("[\\s.]", "_");
             if (schemas.get(db) == null)
                 schemas.put(db,
@@ -83,15 +77,15 @@ public class MongodbSourceTask extends SourceTask {
                                 .field("database", Schema.OPTIONAL_STRING_SCHEMA)
                                 .field("object", Schema.OPTIONAL_STRING_SCHEMA)
                                 .build());
-        }
+        });
 
         loadOffsets();
-        reader = new MongodbReader(host, port, databases, offsets);
+        reader = new MongoDBReader(hosts, databases, offsets);
         reader.run();
     }
 
     /**
-     * Poll this MongodbSourceTask for new records.
+     * Poll this MongoDBSourceTask for new records.
      *
      * @return a list of source records
      * @throws InterruptException
@@ -187,10 +181,10 @@ public class MongodbSourceTask extends SourceTask {
      */
     private void loadOffsets() {
         List<Map<String, String>> partitions = new ArrayList<>();
-        for (String db : databases) {
-            Map<String, String> partition = Collections.singletonMap("mongodb", db);
+        databases.stream().forEach(database -> {
+            Map<String, String> partition = Collections.singletonMap("mongodb", database);
             partitions.add(partition);
-        }
+        });
         offsets.putAll(context.offsetStorageReader().offsets(partitions));
     }
 }

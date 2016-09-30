@@ -1,8 +1,10 @@
 package org.apache.kafka.connect.mongodb;
 
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.mongodb.configuration.MongoDBSinkConfiguration;
 import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.connect.util.ConnectorUtils;
 import org.apache.kafka.connect.utils.LogUtils;
@@ -10,30 +12,25 @@ import org.apache.kafka.connect.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
- * MongodbSinkConnector implement the Connector interface to send Kafka
+ * MongoDBSinkConnector implement the Connector interface to send Kafka
  * data to Mongodb
  *
  * @author Andrea Patelli
+ * @author Niraj Patel
  */
-public class MongodbSinkConnector extends SinkConnector {
-    private final static Logger log = LoggerFactory.getLogger(MongodbSinkConnector.class);
+public class MongoDBSinkConnector extends SinkConnector {
 
-    public static final String PORT = "port";
-    public static final String HOST = "host";
-    public static final String BULK_SIZE = "bulk.size";
-    public static final String DATABASE = "mongodb.database";
-    public static final String COLLECTIONS = "mongodb.collections";
-    public static final String TOPICS = "topics";
+    private final static Logger log = LoggerFactory.getLogger(MongoDBSinkConnector.class);
 
-    private String port;
-    private String host;
-    private String bulkSize;
-    private String database;
-    private String collections;
-    private String topics;
+    private Map<String, String> configuration;
 
     /**
      * Get the version of this connector.
@@ -49,33 +46,20 @@ public class MongodbSinkConnector extends SinkConnector {
      * Start this Connector. This method will only be called on a clean Connector, i.e. it has
      * either just been instantiated and initialized or {@link #stop()} has been invoked.
      *
-     * @param map configuration settings
+     * @param configuration configuration settings
      */
     @Override
-    public void start(Map<String, String> map) {
-        log.trace("Parsing configuration");
+    public void start(Map<String, String> configuration) {
+        MongoDBSinkConfiguration sinkConfiguration = new MongoDBSinkConfiguration(configuration);
+        this.configuration = sinkConfiguration.originalsStrings();
 
-        port = map.get(PORT);
-        if (port == null || port.isEmpty())
-            throw new ConnectException("Missing " + PORT + " config");
-
-        bulkSize = map.get(BULK_SIZE);
-        if (bulkSize == null || bulkSize.isEmpty())
-            throw new ConnectException("Missing " + BULK_SIZE + " config");
-
-        host = map.get(HOST);
-        if (host == null || host.isEmpty())
-            throw new ConnectException("Missing " + HOST + " config");
-
-        database = map.get(DATABASE);
-        collections = map.get(COLLECTIONS);
-        topics = map.get(TOPICS);
-
+        String collections = configuration.get(MongoDBSinkConfiguration.COLLECTIONS_CONFIG);
+        String topics = configuration.get(MongoDBSinkConfiguration.TOPICS_CONFIG);
         if (collections.split(",").length != topics.split(",").length) {
             throw new ConnectException("The number of topics should be the same as the number of collections");
         }
 
-        LogUtils.dumpConfiguration(map, log);
+        LogUtils.dumpConfiguration(configuration, log);
     }
 
     /**
@@ -85,7 +69,7 @@ public class MongodbSinkConnector extends SinkConnector {
      */
     @Override
     public Class<? extends Task> taskClass() {
-        return MongodbSinkTask.class;
+        return MongoDBSinkTask.class;
     }
 
     /**
@@ -98,22 +82,21 @@ public class MongodbSinkConnector extends SinkConnector {
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
         List<Map<String, String>> configs = new ArrayList<>();
-        List<String> coll = Arrays.asList(collections.split(","));
+        List<String> coll = Arrays.asList(configuration.get(MongoDBSinkConfiguration.COLLECTIONS_CONFIG).split(","));
         int numGroups = Math.min(coll.size(), maxTasks);
         List<List<String>> dbsGrouped = ConnectorUtils.groupPartitions(coll, numGroups);
-        List<String> topics = Arrays.asList(this.topics.split(","));
+        List<String> topics = Arrays.asList(configuration.get(MongoDBSinkConfiguration.TOPICS_CONFIG).split(","));
         List<List<String>> topicsGrouped = ConnectorUtils.groupPartitions(topics, numGroups);
 
-        for (int i = 0; i < numGroups; i++) {
+        IntStream.range(0, numGroups).forEach(i -> {
             Map<String, String> config = new HashMap<>();
-            config.put(PORT, port);
-            config.put(BULK_SIZE, bulkSize);
-            config.put(HOST, host);
-            config.put(DATABASE, database);
-            config.put(COLLECTIONS, StringUtils.join(dbsGrouped.get(i), ","));
-            config.put(TOPICS, StringUtils.join(topicsGrouped.get(i), ","));
+            config.put(MongoDBSinkConfiguration.BULK_SIZE_CONFIG, configuration.get(MongoDBSinkConfiguration.BULK_SIZE_CONFIG));
+            config.put(MongoDBSinkConfiguration.HOST_URLS_CONFIG, configuration.get(MongoDBSinkConfiguration.HOST_URLS_CONFIG));
+            config.put(MongoDBSinkConfiguration.DATABASE_CONFIG, configuration.get(MongoDBSinkConfiguration.DATABASE_CONFIG));
+            config.put(MongoDBSinkConfiguration.COLLECTIONS_CONFIG, StringUtils.join(dbsGrouped.get(i), ","));
+            config.put(MongoDBSinkConfiguration.TOPICS_CONFIG, StringUtils.join(topicsGrouped.get(i), ","));
             configs.add(config);
-        }
+        });
         return configs;
     }
 
@@ -122,6 +105,12 @@ public class MongodbSinkConnector extends SinkConnector {
      */
     @Override
     public void stop() {
-
+        // not implemented
     }
+
+    @Override
+    public ConfigDef config() {
+        return MongoDBSinkConfiguration.config;
+    }
+
 }

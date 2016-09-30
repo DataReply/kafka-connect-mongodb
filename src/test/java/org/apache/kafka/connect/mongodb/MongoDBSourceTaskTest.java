@@ -14,6 +14,7 @@ import de.flapdoodle.embed.process.runtime.Network;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.kafka.connect.mongodb.configuration.MongoDBSourceConfiguration;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTaskContext;
 import org.apache.kafka.connect.storage.OffsetStorageReader;
@@ -25,14 +26,16 @@ import org.powermock.api.easymock.PowerMock;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * @author Andrea Patelli
+ * @author Niraj Patel
  */
-public class MongodbSourceTaskTest extends TestCase {
+public class MongoDBSourceTaskTest extends TestCase {
 
-    private static String REPLICATION_PATH = "/home/vagrant/mongo";
-    private MongodbSourceTask task;
+    private static String REPLICATION_PATH = "/tmp/mongo";
+    private MongoDBSourceTask task;
     private SourceTaskContext context;
     private OffsetStorageReader offsetStorageReader;
     private Map<String, String> sourceProperties;
@@ -86,19 +89,18 @@ public class MongodbSourceTaskTest extends TestCase {
 //                Assert.assertTrue(false);
         }
 
-        task = new MongodbSourceTask();
+        task = new MongoDBSourceTask();
 
         offsetStorageReader = PowerMock.createMock(OffsetStorageReader.class);
         context = PowerMock.createMock(SourceTaskContext.class);
         task.initialize(context);
 
         sourceProperties = new HashMap<>();
-        sourceProperties.put("host", "localhost");
-        sourceProperties.put("port", Integer.toString(12345));
-        sourceProperties.put("batch.size", Integer.toString(100));
-        sourceProperties.put("schema.name", "schema");
-        sourceProperties.put("topic.prefix", "prefix");
-        sourceProperties.put("databases", "mydb.test1,mydb.test2,mydb.test3");
+        sourceProperties.put(MongoDBSourceConfiguration.HOST_URLS_CONFIG, "localhost:12345");
+        sourceProperties.put(MongoDBSourceConfiguration.BATCH_SIZE_CONFIG, Integer.toString(100));
+        sourceProperties.put(MongoDBSourceConfiguration.SCHEMA_NAME_CONFIG, "schema");
+        sourceProperties.put(MongoDBSourceConfiguration.TOPIC_PREFIX_CONFIG, "prefix");
+        sourceProperties.put(MongoDBSourceConfiguration.DATABASES_CONFIG, "mydb.test1,mydb.test2,mydb.test3");
 
     }
 
@@ -113,11 +115,11 @@ public class MongodbSourceTaskTest extends TestCase {
 
             Integer numberOfDocuments = new Random().nextInt(new Random().nextInt(100000));
 
-            for (int i = 0; i < numberOfDocuments; i++) {
+            IntStream.range(0, numberOfDocuments).forEach(i -> {
                 Document newDocument = new Document()
                         .append(RandomStringUtils.random(new Random().nextInt(100), true, false), new Random().nextInt());
                 db.getCollection(collections.get(new Random().nextInt(3))).insertOne(newDocument);
-            }
+            });
 
             List<SourceRecord> records = new ArrayList<>();
             List<SourceRecord> pollRecords;
@@ -149,11 +151,11 @@ public class MongodbSourceTaskTest extends TestCase {
 
             Integer numberOfDocuments = new Random().nextInt(new Random().nextInt(100000));
 
-            for (int i = 0; i < numberOfDocuments; i++) {
+            IntStream.range(0, numberOfDocuments).forEach(i -> {
                 Document newDocument = new Document()
                         .append(RandomStringUtils.random(new Random().nextInt(100), true, false), new Random().nextInt());
                 db.getCollection(collections.get(new Random().nextInt(3))).insertOne(newDocument);
-            }
+            });
 
             List<SourceRecord> records = new ArrayList<>();
             List<SourceRecord> pollRecords;

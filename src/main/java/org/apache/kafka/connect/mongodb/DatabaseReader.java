@@ -2,6 +2,7 @@ package org.apache.kafka.connect.mongodb;
 
 import com.mongodb.CursorType;
 import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -14,7 +15,10 @@ import org.bson.types.BSONTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 /**
  * Reads mutation from a mongodb database
@@ -23,8 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class DatabaseReader implements Runnable {
     Logger log = LoggerFactory.getLogger(DatabaseReader.class);
-    private String host;
-    private Integer port;
+    private String hosts;
     private String db;
     private String start;
 
@@ -33,9 +36,8 @@ public class DatabaseReader implements Runnable {
     private MongoCollection<Document> oplog;
     private Bson query;
 
-    public DatabaseReader(String host, Integer port, String db, String start, ConcurrentLinkedQueue<Document> messages) {
-        this.host = host;
-        this.port = port;
+    public DatabaseReader(String hosts, String db, String start, ConcurrentLinkedQueue<Document> messages) {
+        this.hosts = hosts;
         this.db = db;
         this.start = start;
         this.messages = messages;
@@ -81,7 +83,19 @@ public class DatabaseReader implements Runnable {
      * @return the oplog collection
      */
     private MongoCollection readCollection() {
-        MongoClient mongoClient = new MongoClient(host, port);
+        List<ServerAddress> addresses = Arrays.stream(hosts.split(",")).map(hostUrl -> {
+            try {
+                String[] hostAndPort = hostUrl.split(":");
+                String host = hostAndPort[0];
+                int port = Integer.parseInt(hostAndPort[1]);
+                return new ServerAddress(host, port);
+            } catch (ArrayIndexOutOfBoundsException aioobe) {
+                throw new ConnectException("hosts must be in host:port format");
+            } catch (NumberFormatException nfe) {
+                throw new ConnectException("port in the hosts field must be an integer");
+            }
+        }).collect(Collectors.toList());
+        MongoClient mongoClient = new MongoClient(addresses);
         MongoDatabase db = mongoClient.getDatabase("local");
         return db.getCollection("oplog.rs");
     }
