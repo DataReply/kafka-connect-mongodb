@@ -10,8 +10,8 @@ import java.util.Map;
 public class LogUtils {
     public static void dumpConfiguration(Map<String, String> map, Logger log) {
         log.trace("Starting connector with configuration:");
-        for (Map.Entry entry : map.entrySet()) {
+        map.entrySet().forEach(entry -> {
             log.trace("{}: {}", entry.getKey(), entry.getValue());
-        }
+        });
     }
 }

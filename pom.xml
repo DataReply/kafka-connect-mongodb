@@ -8,6 +8,11 @@
     <artifactId>connect-mongodb</artifactId>
     <version>1.0</version>
 
+    <properties>
+        <kafka.version>0.10.0.0</kafka.version>
+        <mongodb.version>3.2.1</mongodb.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -16,8 +21,8 @@
                 <version>3.3</version>
                 <inherited>true</inherited>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -46,12 +51,18 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver</artifactId>
-            <version>3.2.1</version>
+            <version>${mongodb.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>
-            <version>0.9.0.0</version>
+            <version>${kafka.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

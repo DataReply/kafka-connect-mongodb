@@ -15,19 +15,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Andrea Patelli
  */
-public class MongodbReader {
-    private static final Logger log = LoggerFactory.getLogger(MongodbReader.class);
+public class MongoDBReader {
+    private static final Logger log = LoggerFactory.getLogger(MongoDBReader.class);
 
     protected ConcurrentLinkedQueue<Document> messages;
 
     private List<String> dbs;
-    private String host;
-    private Integer port;
+    private String hosts;
     private Map<Map<String, String>, Map<String, Object>> start;
 
-    public MongodbReader(String host, Integer port, List<String> dbs, Map<Map<String, String>, Map<String, Object>> start) {
-        this.host = host;
-        this.port = port;
+    public MongoDBReader(String hosts, List<String> dbs, Map<Map<String, String>, Map<String, Object>> start) {
+        this.hosts = hosts;
         this.dbs = new ArrayList<>(0);
         this.dbs.addAll(dbs);
         this.start = start;
@@ -36,7 +34,7 @@ public class MongodbReader {
 
     public void run() {
         // for every database to watch
-        for (String db : dbs) {
+        dbs.stream().forEach(db -> {
             String start;
             // get the last message that was read
             Map<String, Object> dbOffset = this.start.get(Collections.singletonMap("mongodb", db));
@@ -46,13 +44,12 @@ public class MongodbReader {
                 start = (String) this.start.get(Collections.singletonMap("mongodb", db)).get(db);
 
             log.trace("Starting database reader with configuration: ");
-            log.trace("host: {}", host);
-            log.trace("port: {}", port);
+            log.trace("hosts: {}", hosts);
             log.trace("db: {}", db);
             log.trace("start: {}", start);
             // start a new thread for reading mutation of the specific database
-            DatabaseReader reader = new DatabaseReader(host, port, db, start, messages);
+            DatabaseReader reader = new DatabaseReader(hosts, db, start, messages);
             new Thread(reader).start();
-        }
+        });
     }
 }
