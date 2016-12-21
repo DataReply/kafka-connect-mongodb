@@ -1,5 +1,6 @@
 package org.apache.kafka.connect.mongodb;
 
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -12,6 +13,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.PORT;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.HOST;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.SCHEMA_NAME;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.BATCH_SIZE;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.TOPIC_PREFIX;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.DATABASES;
+
 /**
  * MongodbSourceConnector implements the connector interface
  * to write on Kafka mutations received from a mongodb database
@@ -20,13 +28,6 @@ import java.util.*;
  */
 public class MongodbSourceConnector extends SourceConnector {
     private final static Logger log = LoggerFactory.getLogger(MongodbSourceConnector.class);
-
-    public static final String PORT = "port";
-    public static final String HOST = "host";
-    public static final String SCHEMA_NAME = "schema.name";
-    public static final String BATCH_SIZE = "batch.size";
-    public static final String TOPIC_PREFIX = "topic.prefix";
-    public static final String DATABASES = "databases";
 
     private String port;
     private String host;
@@ -118,6 +119,11 @@ public class MongodbSourceConnector extends SourceConnector {
      */
     @Override
     public void stop() {
+    }
+
+    @Override
+    public ConfigDef config () {
+        return MongodbSourceConfig.config;
     }
 
 
