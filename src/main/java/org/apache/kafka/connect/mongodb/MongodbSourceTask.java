@@ -92,10 +92,10 @@ public class MongodbSourceTask extends SourceTask {
         loadOffsets();
         
         if(uri != null){
-        	reader = new MongodbReader(uri, databases, offsets);
+        	reader = new MongodbReader(uri, databases, batchSize, offsets);
         }
         else{
-        	reader = new MongodbReader(host, port, databases, offsets);
+        	reader = new MongodbReader(host, port, databases, batchSize, offsets);
         }
         reader.run();
     }
@@ -109,7 +109,7 @@ public class MongodbSourceTask extends SourceTask {
     @Override
     public List<SourceRecord> poll() throws InterruptException {
         List<SourceRecord> records = new ArrayList<>();
-        while (!reader.isEmpty() && records.size() < batchSize) {
+        while (!reader.isEmpty()) {
         	Document message = reader.pool();
             Struct messageStruct = getStruct(message);
             String topic = getTopic(message);
@@ -171,6 +171,7 @@ public class MongodbSourceTask extends SourceTask {
         BsonTimestamp timestamp = (BsonTimestamp) message.get("ts");
         return new StringBuilder()
                 .append(timestamp.getTime())
+                .append("_")
                 .append(timestamp.getInc())
                 .toString();
     }

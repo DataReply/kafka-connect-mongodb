@@ -30,18 +30,21 @@ public class DatabaseReader implements Runnable {
     private final Integer port;
     private final String uri;
     private final String db;
+    private final Integer batchSize;
+    private final String start;
     private MongoClient mongoClient;
-    private String start;
+    private int page = 0;
 
     private ConcurrentLinkedQueue<Document> messages;
 
     private MongoCollection<Document> oplog;
     private Bson query;
     
-    public DatabaseReader(String uri, String db, String start, ConcurrentLinkedQueue<Document> messages) {
+    public DatabaseReader(String uri, String db, String start, Integer batchSize, ConcurrentLinkedQueue<Document> messages) {
         this.uri = uri;
         this.host = null;
         this.port = null;
+        this.batchSize = batchSize;
         this.db = db;
         this.start = start;
         this.messages = messages;
@@ -50,13 +53,13 @@ public class DatabaseReader implements Runnable {
         } catch (ConnectException e) {
             throw e;
         }
-        log.trace("Starting from {}", start);
     }
 
-    public DatabaseReader(String host, Integer port, String db, String start, ConcurrentLinkedQueue<Document> messages) {
+    public DatabaseReader(String host, Integer port, String db, String start, Integer batchSize, ConcurrentLinkedQueue<Document> messages) {
         this.uri = null;
         this.host = host;
         this.port = port;
+        this.batchSize = batchSize;
         this.db = db;
         this.start = start;
         this.messages = messages;
@@ -65,36 +68,43 @@ public class DatabaseReader implements Runnable {
         } catch (ConnectException e) {
             throw e;
         }
-        log.trace("Starting from {}", start);
     }
 
     @Override
     public void run() {
-        Document fields = new Document();
-        fields.put("ts", 1);
-        fields.put("op", 1);
-        fields.put("ns", 1);
-        fields.put("o", 1);
-
-        FindIterable<Document> documents = oplog
+    	while(true){
+    		if(messages.isEmpty()){
+		        log.debug("Query starting in page {}.", page);
+		        final FindIterable<Document> documents = find(page);
+		        try {
+		            for (Document document : documents) {
+		                log.trace(document.toString());
+		                messages.add(document);
+		            }
+		        } catch(Exception e) {
+		            log.error("Closed connection", e);
+		        }
+		        page++;
+    		}
+    		else{
+    			try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					log.error(e.getMessage(), e);
+				}
+    		}
+    	}
+    }
+    
+    private FindIterable<Document> find(int page){
+        final FindIterable<Document> documents = oplog
                 .find(query)
                 .sort(new Document("$natural", 1))
+                .skip(page * batchSize)
+                .limit(batchSize)
                 .projection(Projections.include("ts", "op", "ns", "o"))
                 .cursorType(CursorType.TailableAwait);
-
-        try {
-            for (Document document : documents) {
-                log.trace(document.toString());
-                messages.add(document);
-            }
-        } catch(Exception e) {
-            log.error("Closed connection");
-        }
-    }
-
-    private void init() {
-        oplog = readCollection();
-        query = createQuery();
+        return documents;
     }
     
     @Override
@@ -114,6 +124,11 @@ public class DatabaseReader implements Runnable {
     		mongoClient = new MongoClient(host, port);
     	}
 		return mongoClient;
+    }
+    
+    private void init() {
+        oplog = readCollection();
+        query = createQuery();
     }
 
     /**
@@ -140,16 +155,17 @@ public class DatabaseReader implements Runnable {
      */
     private Bson createQuery() {
         // timestamps are used as offsets, saved as a concatenation of seconds and order
-        Long timestamp = Long.parseLong(start);
-        Integer order = Long.valueOf(timestamp % 10).intValue();
-        timestamp = timestamp / 10;
-
-        Integer finalTimestamp = timestamp.intValue();
-        Integer finalOrder = order;
-
+    	Integer timestamp = 0;
+        Integer order = 0;
+    	if(!start.equals("0")){    	
+	    	final String[] splitted = start.split("_");
+	    	timestamp = Integer.valueOf(splitted[0]);
+	        order = Integer.valueOf(splitted[1]);
+    	}
+    	
         Bson query = Filters.and(
                 Filters.exists("fromMigrate", false),
-                Filters.gt("ts", new BSONTimestamp(finalTimestamp, finalOrder)),
+                Filters.gt("ts", new BSONTimestamp(timestamp, order)),
                 Filters.or(
                         Filters.eq("op", "i"),
                         Filters.eq("op", "u"),
