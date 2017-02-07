@@ -73,8 +73,7 @@ For every message, a SourceRecord is created, having the following schema:
 name=mongodb-source-connector
 connector.class=org.apache.kafka.connect.mongodb.MongodbSourceConnector
 tasks.max=1
-host=127.0.0.1
-port=27017
+uri=mongodb://127.0.0.1:27017
 batch.size=100
 schema.name=mongodbschema
 topic.prefix=optionalprefix
@@ -84,8 +83,9 @@ databases=mydb.test1,mydb.test2,mydb.test3
 * **name**: name of the connector
 * **connector.class**: class of the implementation of the connector
 * **tasks.max**: maximum number of tasks to create
-* **host**: mongodb host
-* **port**: mongodb port
+* **uri**: mongodb uri (required if host is not informed)
+* **host**: mongodb host (required if uri is not informed)
+* **port**: mongodb port (required if uri is not informed) 
 * **batch.size**: maximum number of messages to write on Kafka at every poll() call
 * **schema.name**: name to use for the schema, it will be formatted as ``{schema.name}_{database}_{collection}``
 * **topic.prefix**: optional prefix to append to the topic names. The topic name is formatted as ``{topic.prefix}_{database}_{collection}``
@@ -100,8 +100,7 @@ The structure of the written document is derived from the schema of the messages
 name=mongodb-sink-connector
 connector.class=org.apache.kafka.connect.mongodb.MongodbSinkConnector
 tasks.max=1
-host=127.0.0.1
-port=27017
+uri=mongodb://127.0.0.1:27017
 bulk.size=100
 mongodb.database=databasetest
 mongodb.collections=mydb_test1,mydb_test2,mydb_test3
@@ -111,8 +110,9 @@ topics=optionalprefix_mydb_test1,optionalprefix_mydb_test2,optionalprefix_mydb_t
 * **name**: name of the connector
 * **connector.class**: class of the implementation of the connector
 * **tasks.max**: maximum number of tasks to create
-* **host**: mongodb host
-* **port**: mongodb port
+* **uri**: mongodb uri (required if host is not informed)
+* **host**: mongodb host (required if uri is not informed)
+* **port**: mongodb port (required if uri is not informed) 
 * **bulk.size**: maximum number of documents to write on Mongodb at every put() call
 * **mongodb.database**: database to use
 * **mongodb.collections**: comma separated list of collections on which write the documents

@@ -2,11 +2,14 @@ package org.apache.kafka.connect.mongodb;
 
 import com.mongodb.CursorType;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -22,18 +25,36 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author Andrea Patelli
  */
 public class DatabaseReader implements Runnable {
-    Logger log = LoggerFactory.getLogger(DatabaseReader.class);
-    private String host;
-    private Integer port;
-    private String db;
+    private final Logger log = LoggerFactory.getLogger(DatabaseReader.class);
+    private final String host;
+    private final Integer port;
+    private final String uri;
+    private final String db;
+    private MongoClient mongoClient;
     private String start;
 
     private ConcurrentLinkedQueue<Document> messages;
 
     private MongoCollection<Document> oplog;
     private Bson query;
+    
+    public DatabaseReader(String uri, String db, String start, ConcurrentLinkedQueue<Document> messages) {
+        this.uri = uri;
+        this.host = null;
+        this.port = null;
+        this.db = db;
+        this.start = start;
+        this.messages = messages;
+        try {
+            init();
+        } catch (ConnectException e) {
+            throw e;
+        }
+        log.trace("Starting from {}", start);
+    }
 
     public DatabaseReader(String host, Integer port, String db, String start, ConcurrentLinkedQueue<Document> messages) {
+        this.uri = null;
         this.host = host;
         this.port = port;
         this.db = db;
@@ -47,6 +68,7 @@ public class DatabaseReader implements Runnable {
         log.trace("Starting from {}", start);
     }
 
+    @Override
     public void run() {
         Document fields = new Document();
         fields.put("ts", 1);
@@ -74,15 +96,40 @@ public class DatabaseReader implements Runnable {
         oplog = readCollection();
         query = createQuery();
     }
+    
+    @Override
+    public void finalize(){
+    	if(mongoClient != null){
+    		mongoClient.close();
+    	}
+    }
+    
+    private MongoClient createMongoClient(){
+    	MongoClient mongoClient;
+    	if(uri != null){
+    		final MongoClientURI mongoClientURI = new MongoClientURI(uri);
+    		mongoClient = new MongoClient(mongoClientURI);
+    	}
+    	else{
+    		mongoClient = new MongoClient(host, port);
+    	}
+		return mongoClient;
+    }
 
     /**
      * Loads the oplog collection.
      *
      * @return the oplog collection
      */
-    private MongoCollection readCollection() {
-        MongoClient mongoClient = new MongoClient(host, port);
-        MongoDatabase db = mongoClient.getDatabase("local");
+    private MongoCollection<Document> readCollection() {
+		mongoClient = createMongoClient();
+		
+        log.trace("Starting database reader with configuration: ");
+		log.trace("addresses: {}", StringUtils.join(mongoClient.getAllAddress(), ","));
+        log.trace("db: {}", db);
+        log.trace("start: {}", start);
+        
+        final MongoDatabase db = mongoClient.getDatabase("local");
         return db.getCollection("oplog.rs");
     }
 
@@ -94,7 +141,7 @@ public class DatabaseReader implements Runnable {
     private Bson createQuery() {
         // timestamps are used as offsets, saved as a concatenation of seconds and order
         Long timestamp = Long.parseLong(start);
-        Integer order = new Long(timestamp % 10).intValue();
+        Integer order = Long.valueOf(timestamp % 10).intValue();
         timestamp = timestamp / 10;
 
         Integer finalTimestamp = timestamp.intValue();

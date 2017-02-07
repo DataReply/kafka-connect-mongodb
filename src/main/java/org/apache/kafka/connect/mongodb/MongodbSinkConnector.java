@@ -16,6 +16,7 @@ import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.HOST;
 import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.PORT;
 import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.BULK_SIZE;
 import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.TOPICS;
+import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.URI;
 import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.DATABASE;
 import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.COLLECTIONS;
 
@@ -28,6 +29,7 @@ import static org.apache.kafka.connect.mongodb.MongodbSinkConfig.COLLECTIONS;
 public class MongodbSinkConnector extends SinkConnector {
     private final static Logger log = LoggerFactory.getLogger(MongodbSinkConnector.class);
 
+    private String uri;
     private String port;
     private String host;
     private String bulkSize;
@@ -55,17 +57,21 @@ public class MongodbSinkConnector extends SinkConnector {
     public void start(Map<String, String> map) {
         log.trace("Parsing configuration");
 
-        port = map.get(PORT);
-        if (port == null || port.isEmpty())
-            throw new ConnectException("Missing " + PORT + " config");
-
+        uri = map.get(URI);
+        if (uri == null || uri.isEmpty()){
+            host = map.get(HOST);
+            if (host == null || host.isEmpty()){
+                throw new ConnectException("Missing " + HOST + " config");
+            }
+        	
+	        port = map.get(PORT);
+	        if (port == null || port.isEmpty()){
+	            throw new ConnectException("Missing " + PORT + " config");
+	        }
+        }
         bulkSize = map.get(BULK_SIZE);
         if (bulkSize == null || bulkSize.isEmpty())
             throw new ConnectException("Missing " + BULK_SIZE + " config");
-
-        host = map.get(HOST);
-        if (host == null || host.isEmpty())
-            throw new ConnectException("Missing " + HOST + " config");
 
         database = map.get(DATABASE);
         collections = map.get(COLLECTIONS);
@@ -106,9 +112,14 @@ public class MongodbSinkConnector extends SinkConnector {
 
         for (int i = 0; i < numGroups; i++) {
             Map<String, String> config = new HashMap<>();
-            config.put(PORT, port);
+            config.put(URI, uri);
+            if(host!=null){
+                config.put(HOST, host);
+            }
+            if(port!=null){
+            	config.put(PORT, port);
+            }
             config.put(BULK_SIZE, bulkSize);
-            config.put(HOST, host);
             config.put(DATABASE, database);
             config.put(COLLECTIONS, StringUtils.join(dbsGrouped.get(i), ","));
             config.put(TOPICS, StringUtils.join(topicsGrouped.get(i), ","));

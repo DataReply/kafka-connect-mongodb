@@ -1,12 +1,12 @@
 package org.apache.kafka.connect.mongodb;
 
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.UpdateOneModel;
-import com.mongodb.client.model.UpdateOptions;
-import com.mongodb.client.model.WriteModel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Struct;
@@ -18,7 +18,14 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 
 /**
  * MongodbSinkTask is a Task that takes records loaded from Kafka and sends them to
@@ -29,14 +36,16 @@ import java.util.*;
 public class MongodbSinkTask extends SinkTask {
     private final static Logger log = LoggerFactory.getLogger(MongodbSinkTask.class);
 
+    private String uri;
     private Integer port;
     private String host;
     private Integer bulkSize;
     private String collections;
     private String database;
     private String topics;
-
-    private Map<String, MongoCollection> mapping;
+    private MongoClient mongoClient;
+    
+    private Map<String, MongoCollection<Document>> mapping;
     private MongoDatabase db;
 
     @Override
@@ -51,11 +60,13 @@ public class MongodbSinkTask extends SinkTask {
      */
     @Override
     public void start(Map<String, String> map) {
-        try {
-            port = Integer.parseInt(map.get(MongodbSinkConfig.PORT));
-        } catch (Exception e) {
-            throw new ConnectException("Setting " + MongodbSinkConfig.PORT + " should be an integer");
-        }
+    	if(map.containsKey(MongodbSinkConfig.PORT)){
+	        try {
+	            port = Integer.parseInt(map.get(MongodbSinkConfig.PORT));
+	        } catch (Exception e) {
+	            throw new ConnectException("Setting " + MongodbSinkConfig.PORT + " should be an integer");
+	        }
+    	}
 
         try {
             bulkSize = Integer.parseInt(map.get(MongodbSinkConfig.BULK_SIZE));
@@ -65,13 +76,14 @@ public class MongodbSinkTask extends SinkTask {
 
         database = map.get(MongodbSinkConfig.DATABASE);
         host = map.get(MongodbSinkConfig.HOST);
+        uri = map.get(MongodbSinkConfig.URI);
         collections = map.get(MongodbSinkConfig.COLLECTIONS);
         topics = map.get(MongodbSinkConfig.TOPICS);
 
         List<String> collectionsList = Arrays.asList(collections.split(","));
         List<String> topicsList = Arrays.asList(topics.split(","));
-
-        MongoClient mongoClient = new MongoClient(host, port);
+        
+        createMongoClient();
         db = mongoClient.getDatabase(database);
 
         mapping = new HashMap<>();
@@ -81,6 +93,17 @@ public class MongodbSinkTask extends SinkTask {
             String collection = collectionsList.get(i);
             mapping.put(topic, db.getCollection(collection));
         }
+    }
+    
+    private MongoClient createMongoClient(){
+    	if(uri!=null){
+    		final MongoClientURI mongoClientURI = new MongoClientURI(uri);
+    		mongoClient = new MongoClient(mongoClientURI);
+    	}
+    	else{
+    		mongoClient = new MongoClient(host, port);
+    	}
+		return mongoClient;
     }
 
     /**
@@ -131,6 +154,8 @@ public class MongodbSinkTask extends SinkTask {
 
     @Override
     public void stop() {
-
+    	if(mongoClient != null){
+    		mongoClient.close();
+    	}
     }
 }

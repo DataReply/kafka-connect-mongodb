@@ -15,6 +15,8 @@ public class MongodbSourceConfig extends AbstractConfig {
     private static final String HOST_DOC = "Host url of mongodb";
     public static final String PORT = "port";
     private static final String PORT_DOC = "Port of mongodb";
+    public static final String URI = "uri";
+    private static final String URI_DOC = "uri of mongodb";
     public static final String BATCH_SIZE = "batch.size";
     private static final String BATCH_SIZE_DOC = "Count of documents in each polling";
     public static final String SCHEMA_NAME = "schema.name";
@@ -25,6 +27,7 @@ public class MongodbSourceConfig extends AbstractConfig {
     private static final String DATABASES_DOC = "Databases, join database and collection with dot, split different databases with comma";
 
     public static ConfigDef config = new ConfigDef()
+            .define(URI, Type.STRING, Importance.HIGH, URI_DOC)
             .define(HOST, Type.STRING, Importance.HIGH, HOST_DOC)
             .define(PORT, Type.INT, Importance.HIGH, PORT_DOC)
             .define(BATCH_SIZE, Type.INT, Importance.HIGH, BATCH_SIZE_DOC)

@@ -22,8 +22,9 @@ import java.util.*;
 public class MongodbSourceTask extends SourceTask {
     private final static Logger log = LoggerFactory.getLogger(MongodbSourceTask.class);
 
-    private Integer port;
+    private String uri;
     private String host;
+    private Integer port;
     private String schemaName;
     private Integer batchSize;
     private String topicPrefix;
@@ -48,12 +49,14 @@ public class MongodbSourceTask extends SourceTask {
      */
     @Override
     public void start(Map<String, String> map) {
-        try {
-            port = Integer.parseInt(map.get(MongodbSourceConfig.PORT));
-        } catch (Exception e) {
-            throw new ConnectException(MongodbSourceConfig.PORT + " config should be an Integer");
-        }
-
+    	if(map.containsKey(MongodbSourceConfig.PORT)){
+	        try {
+	            port = Integer.parseInt(map.get(MongodbSourceConfig.PORT));
+	        } catch (Exception e) {
+	            throw new ConnectException(MongodbSourceConfig.PORT + " config should be an Integer");
+	        }
+    	}
+    	
         try {
             batchSize = Integer.parseInt(map.get(MongodbSourceConfig.BATCH_SIZE));
         } catch (Exception e) {
@@ -62,6 +65,7 @@ public class MongodbSourceTask extends SourceTask {
 
         schemaName = map.get(MongodbSourceConfig.SCHEMA_NAME);
         topicPrefix = map.get(MongodbSourceConfig.TOPIC_PREFIX);
+        uri = map.get(MongodbSourceConfig.URI);
         host = map.get(MongodbSourceConfig.HOST);
         databases = Arrays.asList(map.get(MongodbSourceConfig.DATABASES).split(","));
 
@@ -86,7 +90,13 @@ public class MongodbSourceTask extends SourceTask {
         }
 
         loadOffsets();
-        reader = new MongodbReader(host, port, databases, offsets);
+        
+        if(uri != null){
+        	reader = new MongodbReader(uri, databases, offsets);
+        }
+        else{
+        	reader = new MongodbReader(host, port, databases, offsets);
+        }
         reader.run();
     }
 
@@ -98,9 +108,9 @@ public class MongodbSourceTask extends SourceTask {
      */
     @Override
     public List<SourceRecord> poll() throws InterruptException {
-        List<SourceRecord> records = new ArrayList<>(0);
-        while (!reader.messages.isEmpty() && records.size() < batchSize) {
-            Document message = reader.messages.poll();
+        List<SourceRecord> records = new ArrayList<>();
+        while (!reader.isEmpty() && records.size() < batchSize) {
+        	Document message = reader.pool();
             Struct messageStruct = getStruct(message);
             String topic = getTopic(message);
             String db = getDB(message);
@@ -118,6 +128,9 @@ public class MongodbSourceTask extends SourceTask {
      */
     @Override
     public void stop() {
+    	if(reader != null){
+    		reader.stop();
+    	}
     }
 
     /**
