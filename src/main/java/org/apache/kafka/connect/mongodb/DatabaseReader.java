@@ -9,8 +9,8 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.utils.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.BSONTimestamp;

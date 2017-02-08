@@ -19,6 +19,7 @@ import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.URI;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.SCHEMA_NAME;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.BATCH_SIZE;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.TOPIC_PREFIX;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.CONVERTER_CLASS;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.DATABASES;
 
 /**
@@ -36,6 +37,7 @@ public class MongodbSourceConnector extends SourceConnector {
     private String schemaName;
     private String batchSize;
     private String topicPrefix;
+    private String converterClass;
     private String databases;
 
     /**
@@ -81,6 +83,8 @@ public class MongodbSourceConnector extends SourceConnector {
         databases = map.get(DATABASES);
 
         topicPrefix = map.get(TOPIC_PREFIX);
+        
+        converterClass = map.get(CONVERTER_CLASS);
 
         LogUtils.dumpConfiguration(map, log);
     }
@@ -119,6 +123,7 @@ public class MongodbSourceConnector extends SourceConnector {
             config.put(SCHEMA_NAME, schemaName);
             config.put(BATCH_SIZE, batchSize);
             config.put(TOPIC_PREFIX, topicPrefix);
+            config.put(CONVERTER_CLASS, converterClass);
             config.put(DATABASES, StringUtils.join(dbsGrouped.get(i), ","));
             configs.add(config);
         }

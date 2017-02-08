@@ -1,18 +1,25 @@
 package org.apache.kafka.connect.mongodb;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.mongodb.converter.StringStructConverter;
+import org.apache.kafka.connect.mongodb.converter.StructConverter;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.bson.BsonTimestamp;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 /**
  * MongodbSourceTask is a Task that reads mutations from a mongodb for storage in Kafka.
@@ -28,6 +35,7 @@ public class MongodbSourceTask extends SourceTask {
     private String schemaName;
     private Integer batchSize;
     private String topicPrefix;
+    private StructConverter structConverter;
     private List<String> databases;
     private static Map<String, Schema> schemas = null;
 
@@ -67,6 +75,18 @@ public class MongodbSourceTask extends SourceTask {
         topicPrefix = map.get(MongodbSourceConfig.TOPIC_PREFIX);
         uri = map.get(MongodbSourceConfig.URI);
         host = map.get(MongodbSourceConfig.HOST);
+        
+        try{
+            String structConverterClass = map.get(MongodbSourceConfig.CONVERTER_CLASS);
+            if(structConverterClass == null || structConverterClass.isEmpty()){
+            	structConverterClass = StringStructConverter.class.getName();
+            }
+            structConverter = (StructConverter) Class.forName(structConverterClass).newInstance();
+        }
+        catch(Exception e){
+        	throw new ConnectException(MongodbSourceConfig.CONVERTER_CLASS + " config should be a class of type StructConverter");
+        }
+        
         databases = Arrays.asList(map.get(MongodbSourceConfig.DATABASES).split(","));
 
         log.trace("Creating schema");
@@ -177,23 +197,14 @@ public class MongodbSourceTask extends SourceTask {
     }
 
     /**
-     * Creates a struct from a Mongodb message.
+     * Creates a struct from a Mongodb message using configured {@link StructConverter}.
      *
      * @param message to parse
      * @return message formatted as a Struct
      */
     private Struct getStruct(Document message) {
-        Schema schema = schemas.get(getDB(message).replaceAll("[\\s.]", "_"));
-        Struct messageStruct = new Struct(schema);
-        BsonTimestamp bsonTimestamp = (BsonTimestamp) message.get("ts");
-        Integer seconds = bsonTimestamp.getTime();
-        Integer order = bsonTimestamp.getInc();
-        messageStruct.put("timestamp", seconds);
-        messageStruct.put("order", order);
-        messageStruct.put("operation", message.get("op"));
-        messageStruct.put("database", message.get("ns"));
-        messageStruct.put("object", message.get("o").toString());
-        return messageStruct;
+    	final Schema schema = schemas.get(getDB(message).replaceAll("[\\s.]", "_"));
+    	return structConverter.toStruct(message, schema);
     }
 
     /**

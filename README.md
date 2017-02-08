@@ -89,6 +89,7 @@ databases=mydb.test1,mydb.test2,mydb.test3
 * **batch.size**: maximum number of messages to write on Kafka at every poll() call
 * **schema.name**: name to use for the schema, it will be formatted as ``{schema.name}_{database}_{collection}``
 * **topic.prefix**: optional prefix to append to the topic names. The topic name is formatted as ``{topic.prefix}_{database}_{collection}``
+* **converter.class**: converter class used to transform a mongodb oplog in a kafka message. We recommend use ``org.apache.kafka.connect.mongodb.converter.JsonStructConverter``, but due backward compatibility the default is ``org.apache.kafka.connect.mongodb.converter.StringStructConverter``. 
 * **databases**: comma separated list of collections from which import data
 
 # Sink Connector
@@ -104,6 +105,7 @@ uri=mongodb://127.0.0.1:27017
 bulk.size=100
 mongodb.database=databasetest
 mongodb.collections=mydb_test1,mydb_test2,mydb_test3
+converter.class=org.apache.kafka.connect.mongodb.converter.JsonStructConverter
 topics=optionalprefix_mydb_test1,optionalprefix_mydb_test2,optionalprefix_mydb_test3
 ```
 
