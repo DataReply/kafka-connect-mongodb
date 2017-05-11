@@ -16,29 +16,40 @@ import java.util.Map;
 public class MongodbSourceConnectorTest {
     private MongodbSourceConnector connector;
     private ConnectorContext context;
-    private Map<String, String> sourceProperties;
 
 
     @Before
-    public void setup() {
+    public void setupByHostAndPort() {
         connector = new MongodbSourceConnector();
         context = PowerMock.createMock(ConnectorContext.class);
         connector.initialize(context);
-
-        sourceProperties = new HashMap<>();
+    }
+    
+    private Map<String, String> buildSourcePropertiesWithHostAndPort(){
+    	final Map<String, String> sourceProperties = new HashMap<>();
         sourceProperties.put("host", "localhost");
         sourceProperties.put("port", Integer.toString(12345));
         sourceProperties.put("batch.size", Integer.toString(100));
         sourceProperties.put("schema.name", "schema");
         sourceProperties.put("topic.prefix", "prefix");
         sourceProperties.put("databases", "mydb.test1,mydb.test2,mydb.test3");
-
+        return sourceProperties;
+    }
+    
+    private Map<String, String> buildSourcePropertiesWithURI(){
+    	final Map<String, String> sourceProperties = new HashMap<>();
+        sourceProperties.put("uri", "mongodb://localhost:12345");
+        sourceProperties.put("batch.size", Integer.toString(100));
+        sourceProperties.put("schema.name", "schema");
+        sourceProperties.put("topic.prefix", "prefix");
+        sourceProperties.put("databases", "mydb.test1,mydb.test2,mydb.test3");
+        return sourceProperties;
     }
 
     @Test
     public void testSourceTasks() {
         PowerMock.replayAll();
-        connector.start(sourceProperties);
+        connector.start(buildSourcePropertiesWithHostAndPort());
         List<Map<String, String>> taskConfigs = connector.taskConfigs(1);
         Assert.assertEquals(1, taskConfigs.size());
         Assert.assertEquals("localhost", taskConfigs.get(0).get("host"));
@@ -49,11 +60,25 @@ public class MongodbSourceConnectorTest {
         Assert.assertEquals("mydb.test1,mydb.test2,mydb.test3", taskConfigs.get(0).get("databases"));
         PowerMock.verifyAll();
     }
+    
+    @Test
+    public void testSourceTasksUri() {
+        PowerMock.replayAll();
+        connector.start(buildSourcePropertiesWithURI());
+        List<Map<String, String>> taskConfigs = connector.taskConfigs(1);
+        Assert.assertEquals(1, taskConfigs.size());
+        Assert.assertEquals("mongodb://localhost:12345", taskConfigs.get(0).get("uri"));
+        Assert.assertEquals("100", taskConfigs.get(0).get("batch.size"));
+        Assert.assertEquals("schema", taskConfigs.get(0).get("schema.name"));
+        Assert.assertEquals("prefix", taskConfigs.get(0).get("topic.prefix"));
+        Assert.assertEquals("mydb.test1,mydb.test2,mydb.test3", taskConfigs.get(0).get("databases"));
+        PowerMock.verifyAll();
+    }
 
     @Test
     public void testMultipleTasks() {
         PowerMock.replayAll();
-        connector.start(sourceProperties);
+        connector.start(buildSourcePropertiesWithHostAndPort());
         List<Map<String, String>> taskConfigs = connector.taskConfigs(2);
         Assert.assertEquals(2, taskConfigs.size());
         Assert.assertEquals("localhost", taskConfigs.get(0).get("host"));
@@ -75,7 +100,7 @@ public class MongodbSourceConnectorTest {
     @Test
     public void testTaskClass() {
         PowerMock.replayAll();
-        connector.start(sourceProperties);
+        connector.start(buildSourcePropertiesWithHostAndPort());
         Assert.assertEquals(MongodbSourceTask.class, connector.taskClass());
         PowerMock.verifyAll();
     }

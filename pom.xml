@@ -6,7 +6,7 @@
 
     <groupId>org.apache.kafka</groupId>
     <artifactId>connect-mongodb</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 
     <build>
         <plugins>
@@ -52,7 +52,7 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>
             <version>0.10.0.1</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

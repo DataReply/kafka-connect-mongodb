@@ -15,6 +15,8 @@ public class MongodbSinkConfig extends AbstractConfig {
     private static final String HOST_DOC = "Host url of mongodb";
     public static final String PORT = "port";
     private static final String PORT_DOC = "Port of mongodb";
+    public static final String URI = "uri";
+    private static final String URI_DOC = "uri of mongodb";
     public static final String BULK_SIZE = "bulk.size";
     private static final String BULK_SIZE_DOC = "Count of documents in each polling";
     public static final String TOPICS = "topics";
@@ -25,6 +27,7 @@ public class MongodbSinkConfig extends AbstractConfig {
     private static final String COLLECTIONS_DOC = "Collections of mongodb";
 
     public static ConfigDef config = new ConfigDef()
+    		.define(URI, Type.STRING, Importance.HIGH, URI_DOC)
             .define(HOST, Type.STRING, Importance.HIGH, HOST_DOC)
             .define(PORT, Type.INT, Importance.HIGH, PORT_DOC)
             .define(BULK_SIZE, Type.INT, Importance.HIGH, BULK_SIZE_DOC)
