@@ -1,12 +1,15 @@
 package org.apache.kafka.connect.utils;
 
-import org.apache.kafka.connect.data.Field;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.Struct;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.kafka.connect.data.Date;
+import org.apache.kafka.connect.data.Field;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.data.Time;
+import org.apache.kafka.connect.data.Timestamp;
 
 /**
  * @author Andrea Patelli
@@ -18,18 +21,28 @@ public class SchemaUtils {
         for (Field field : fields) {
             String fieldName = field.name();
             Schema.Type fieldType = field.schema().type();
+            String schemaName=field.schema().name();
             switch (fieldType) {
                 case STRING:
                     jsonMap.put(fieldName, struct.getString(fieldName));
                     break;
                 case INT32:
-                    jsonMap.put(fieldName, struct.getInt32(fieldName));
+                	if (Date.LOGICAL_NAME.equals(schemaName) 
+                			|| Time.LOGICAL_NAME.equals(schemaName)) {
+                		jsonMap.put(fieldName, (java.util.Date) struct.get(fieldName));
+                	} else {
+                		jsonMap.put(fieldName, struct.getInt32(fieldName));
+                	}
                     break;
                 case INT16:
                     jsonMap.put(fieldName, struct.getInt16(fieldName));
                     break;
                 case INT64:
-                    jsonMap.put(fieldName, struct.getInt64(fieldName));
+                	if (Timestamp.LOGICAL_NAME.equals(schemaName)) {
+                		jsonMap.put(fieldName, (java.util.Date) struct.get(fieldName));
+                	} else {
+                		jsonMap.put(fieldName, struct.getInt64(fieldName));
+                	}
                     break;
                 case FLOAT32:
                     jsonMap.put(fieldName, struct.getFloat32(fieldName));
