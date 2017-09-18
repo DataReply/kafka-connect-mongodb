@@ -7,7 +7,7 @@ import org.bson.Document;
 
 /**
  * Default struct converter. This converter store mongodb document with .toString().
- * 
+ *
  * @author André Ignacio
  */
 public class StringStructConverter implements StructConverter {
@@ -18,12 +18,16 @@ public class StringStructConverter implements StructConverter {
         BsonTimestamp bsonTimestamp = (BsonTimestamp) document.get("ts");
         Integer seconds = bsonTimestamp.getTime();
         Integer order = bsonTimestamp.getInc();
+
         messageStruct.put("timestamp", seconds);
         messageStruct.put("order", order);
         messageStruct.put("operation", document.get("op"));
         messageStruct.put("database", document.get("ns"));
         messageStruct.put("object", document.get("o").toString());
-        
+				if (document.get("op") == "u"| document.get("op") == "d" ){
+					messageStruct.put("o2", document.get("o2").toString());
+				}
+
         return messageStruct;
 	}
 

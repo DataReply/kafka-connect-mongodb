@@ -64,7 +64,7 @@ public class MongodbSourceTask extends SourceTask {
 	            throw new ConnectException(MongodbSourceConfig.PORT + " config should be an Integer");
 	        }
     	}
-    	
+
         try {
             batchSize = Integer.parseInt(map.get(MongodbSourceConfig.BATCH_SIZE));
         } catch (Exception e) {
@@ -75,7 +75,7 @@ public class MongodbSourceTask extends SourceTask {
         topicPrefix = map.get(MongodbSourceConfig.TOPIC_PREFIX);
         uri = map.get(MongodbSourceConfig.URI);
         host = map.get(MongodbSourceConfig.HOST);
-        
+
         try{
             String structConverterClass = map.get(MongodbSourceConfig.CONVERTER_CLASS);
             if(structConverterClass == null || structConverterClass.isEmpty()){
@@ -86,7 +86,7 @@ public class MongodbSourceTask extends SourceTask {
         catch(Exception e){
         	throw new ConnectException(MongodbSourceConfig.CONVERTER_CLASS + " config should be a class of type StructConverter");
         }
-        
+
         databases = Arrays.asList(map.get(MongodbSourceConfig.DATABASES).split(","));
 
         log.trace("Creating schema");
@@ -106,11 +106,12 @@ public class MongodbSourceTask extends SourceTask {
                                 .field("operation", Schema.OPTIONAL_STRING_SCHEMA)
                                 .field("database", Schema.OPTIONAL_STRING_SCHEMA)
                                 .field("object", Schema.OPTIONAL_STRING_SCHEMA)
+                                .field("o2", Schema.OPTIONAL_STRING_SCHEMA).optional()
                                 .build());
         }
 
         loadOffsets();
-        
+
         if(uri != null){
         	reader = new MongodbReader(uri, databases, batchSize, offsets);
         }

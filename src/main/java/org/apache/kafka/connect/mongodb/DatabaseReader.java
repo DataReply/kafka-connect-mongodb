@@ -39,7 +39,7 @@ public class DatabaseReader implements Runnable {
 
     private MongoCollection<Document> oplog;
     private Bson query;
-    
+
     public DatabaseReader(String uri, String db, String start, Integer batchSize, ConcurrentLinkedQueue<Document> messages) {
         this.uri = uri;
         this.host = null;
@@ -95,25 +95,25 @@ public class DatabaseReader implements Runnable {
     		}
     	}
     }
-    
+
     private FindIterable<Document> find(int page){
         final FindIterable<Document> documents = oplog
                 .find(query)
                 .sort(new Document("$natural", 1))
                 .skip(page * batchSize)
                 .limit(batchSize)
-                .projection(Projections.include("ts", "op", "ns", "o"))
+                .projection(Projections.include("ts", "op", "ns", "o", "o2"))
                 .cursorType(CursorType.TailableAwait);
         return documents;
     }
-    
+
     @Override
     public void finalize(){
     	if(mongoClient != null){
     		mongoClient.close();
     	}
     }
-    
+
     private MongoClient createMongoClient(){
     	MongoClient mongoClient;
     	if(uri != null){
@@ -125,7 +125,7 @@ public class DatabaseReader implements Runnable {
     	}
 		return mongoClient;
     }
-    
+
     private void init() {
         oplog = readCollection();
         query = createQuery();
@@ -138,12 +138,12 @@ public class DatabaseReader implements Runnable {
      */
     private MongoCollection<Document> readCollection() {
 		mongoClient = createMongoClient();
-		
+
         log.trace("Starting database reader with configuration: ");
 		log.trace("addresses: {}", StringUtils.join(mongoClient.getAllAddress(), ","));
         log.trace("db: {}", db);
         log.trace("start: {}", start);
-        
+
         final MongoDatabase db = mongoClient.getDatabase("local");
         return db.getCollection("oplog.rs");
     }
@@ -157,12 +157,12 @@ public class DatabaseReader implements Runnable {
         // timestamps are used as offsets, saved as a concatenation of seconds and order
     	Integer timestamp = 0;
         Integer order = 0;
-    	if(!start.equals("0")){    	
+    	if(!start.equals("0")){
 	    	final String[] splitted = start.split("_");
 	    	timestamp = Integer.valueOf(splitted[0]);
 	        order = Integer.valueOf(splitted[1]);
     	}
-    	
+
         Bson query = Filters.and(
                 Filters.exists("fromMigrate", false),
                 Filters.gt("ts", new BSONTimestamp(timestamp, order)),

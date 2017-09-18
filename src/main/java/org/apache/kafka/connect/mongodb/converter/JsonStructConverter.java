@@ -7,7 +7,7 @@ import org.bson.Document;
 
 /**
  * Struct converter who stores mongodb document as Json String.
- * 
+ *
  * @author André Ignacio
  */
 public class JsonStructConverter implements StructConverter {
@@ -22,10 +22,15 @@ public class JsonStructConverter implements StructConverter {
 		messageStruct.put("order", order);
 		messageStruct.put("operation", document.get("op"));
 		messageStruct.put("database", document.get("ns"));
-		
+
 		final Document modifiedDocument = (Document) document.get("o");
 		messageStruct.put("object", modifiedDocument.toJson());
-
+		try{
+			final Document modifiedDocumentO2 = (Document) document.get("o2");
+			messageStruct.put("o2", modifiedDocumentO2.toJson());
+		} catch (Exception e){
+			// ignore the error
+		}
 		return messageStruct;
 	}
 
