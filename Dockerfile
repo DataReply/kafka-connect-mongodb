@@ -1,11 +1,20 @@
-FROM anapsix/alpine-java:jdk8
+# Build stage
+#-------------------------------------#
+FROM maven:3.5.2-jdk-8-alpine as build
 
-MAINTAINER bsharkey@frontlineed.com
+# Copy connectors
+COPY . .
+RUN mvn clean package -DskipTests
+#-------------------------------------#
+
+# Runtime stage
+#-------------------------------------#
+FROM frekele/java:jdk8
+MAINTAINER jkabonick@frontlineed.com
 
 # Install kafka
-
 ENV SCALA_VERSION="2.11" \
-    KAFKA_VERSION="0.11.0.0"
+    KAFKA_VERSION="0.11.0.2"
 ENV KAFKA_HOME=/opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION}
 
 ARG KAFKA_DIST=kafka_${SCALA_VERSION}-${KAFKA_VERSION}
@@ -13,7 +22,12 @@ ARG KAFKA_DIST_TGZ=${KAFKA_DIST}.tgz
 ARG KAFKA_DIST_ASC=${KAFKA_DIST}.tgz.asc
 
 RUN set -x && \
-    apk add --no-cache unzip curl ca-certificates gnupg jq && \
+    apt update && \
+    apt update && \
+    apt install libonig4 && \
+    apt install libjq1 && \
+    apt install jq && \
+    apt install unzip curl ca-certificates gnupg && \
     eval $(gpg-agent --daemon) && \
     MIRROR=`curl -sSL https://www.apache.org/dyn/closer.cgi\?as_json\=1 | jq -r '.preferred'` && \
     curl -sSLO "${MIRROR}kafka/${KAFKA_VERSION}/${KAFKA_DIST_TGZ}" && \
@@ -24,10 +38,9 @@ RUN set -x && \
     mv ${KAFKA_DIST_TGZ} /tmp && \
     tar xfz /tmp/${KAFKA_DIST_TGZ} -C /opt && \
     rm /tmp/${KAFKA_DIST_TGZ} &&\
-    apk del unzip curl ca-certificates gnupg
+    apt --yes remove unzip curl ca-certificates gnupg jq libjq1 libonig4
 
 # Set env
-
 ENV PATH=$PATH:/${KAFKA_HOME}/bin \
     CONNECT_CFG=${KAFKA_HOME}/config/connect-distributed.properties \
     CONNECT_BIN=${KAFKA_HOME}/bin/connect-distributed.sh
@@ -39,7 +52,7 @@ EXPOSE ${JMX_PORT}
 EXPOSE ${CONNECT_PORT}
 
 # Copy connectors
-COPY target/connect-mongodb-1.1-jar-with-dependencies.jar $KAFKA_HOME/connectors/connect-mongodb-1.1-jar-with-dependencies.jar
+COPY --from=build target/connect-mongodb-1.1-jar-with-dependencies.jar $KAFKA_HOME/connectors/connect-mongodb-1.1-jar-with-dependencies.jar
 
 WORKDIR $KAFKA_HOME
 
