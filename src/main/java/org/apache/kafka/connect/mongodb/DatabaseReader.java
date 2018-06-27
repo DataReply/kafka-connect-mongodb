@@ -102,7 +102,7 @@ public class DatabaseReader implements Runnable {
                 .sort(new Document("$natural", 1))
                 .skip(page * batchSize)
                 .limit(batchSize)
-                .projection(Projections.include("ts", "op", "ns", "o"))
+                .projection(Projections.include("ts", "op", "ns", "o", "o2"))
                 .cursorType(CursorType.TailableAwait);
         return documents;
     }
