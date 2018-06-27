@@ -24,6 +24,13 @@ public class JsonStructConverter implements StructConverter {
 		messageStruct.put("database", document.get("ns"));
 		
 		final Document modifiedDocument = (Document) document.get("o");
+		
+		if(modifiedDocument.get("_id") == null) {
+		    modifiedDocument.put("_id", ((Document) document.get("o2")).get("_id"));
+		}
+		
+		// modifiedDocument.computeIfAbsent("_id", k -> {return ((Document) document.get("o2")).get("_id");} );
+
 		messageStruct.put("object", modifiedDocument.toJson());
 
 		return messageStruct;
