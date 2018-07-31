@@ -149,7 +149,6 @@ public class MongodbSourceTask extends SourceTask {
             //key is _id
             if(customSchema){
                 //get the key object
-
                 BsonDocument bson = message
                   .toBsonDocument(
                     BsonDocument.class, MongoClient.getDefaultCodecRegistry());
