@@ -1,9 +1,6 @@
 package org.apache.kafka.connect.mongodb;
 
-import java.util.*;
-
 import com.mongodb.MongoClient;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -20,6 +17,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 /**
  * MongodbSourceTask is a Task that reads mutations from a mongodb for storage in Kafka.
@@ -90,7 +89,8 @@ public class MongodbSourceTask extends SourceTask {
         }
 
         try{
-            customSchema = Boolean.parseBoolean(map.get(MongodbSourceConfig.CUSTOM_SCHEMA));
+            if(map.containsKey(MongodbSourceConfig.CUSTOM_SCHEMA))
+                customSchema = Boolean.parseBoolean(map.get(MongodbSourceConfig.CUSTOM_SCHEMA));
         }
         catch (Exception e){
             throw new ConnectException(MongodbSourceConfig.CUSTOM_SCHEMA + " config should be a Boolean");

@@ -24,7 +24,6 @@ public class ConverterUtils {
 
   private final static Logger log = LoggerFactory.getLogger(ConverterUtils.class);
 
-
   public static Struct createDynamicStruct(Schema customSchema, Map<String, Object> doc, Boolean skipId) {
     Struct customStruct = new Struct(customSchema);
     Iterator<String> itKeys = doc.keySet().iterator();

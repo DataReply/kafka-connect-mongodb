@@ -39,7 +39,7 @@ public class MongodbSourceConfig extends AbstractConfig {
       .define(BATCH_SIZE, Type.INT, Importance.HIGH, BATCH_SIZE_DOC)
       .define(SCHEMA_NAME, Type.STRING, Importance.HIGH, SCHEMA_NAME_DOC)
       .define(TOPIC_PREFIX, Type.STRING, Importance.LOW, TOPIC_PREFIX_DOC)
-      .define(CUSTOM_SCHEMA, Type.BOOLEAN, Importance.HIGH, CUSTOM_SCHEMA_DOC)
+      .define(CUSTOM_SCHEMA, Type.BOOLEAN, false, Importance.LOW, CUSTOM_SCHEMA_DOC)
       .define(CONVERTER_CLASS, Type.STRING, StringStructConverter.class.getName(), Importance.LOW, CONVERTER_CLASS_DOC)
       .define(DATABASES, Type.STRING, Importance.LOW, DATABASES_DOC);
 

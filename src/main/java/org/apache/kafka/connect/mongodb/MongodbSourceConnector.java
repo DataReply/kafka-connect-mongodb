@@ -88,7 +88,10 @@ public class MongodbSourceConnector extends SourceConnector {
 
         converterClass = map.get(CONVERTER_CLASS);
 
-        customSchema = map.get(CUSTOM_SCHEMA);
+        if(map.containsKey(CUSTOM_SCHEMA))
+            customSchema = map.get(CUSTOM_SCHEMA);
+        else
+            customSchema = null;
 
 
         LogUtils.dumpConfiguration(map, log);
@@ -130,7 +133,8 @@ public class MongodbSourceConnector extends SourceConnector {
             config.put(TOPIC_PREFIX, topicPrefix);
             config.put(CONVERTER_CLASS, converterClass);
             config.put(DATABASES, StringUtils.join(dbsGrouped.get(i), ","));
-            config.put(CUSTOM_SCHEMA, customSchema);
+            if(customSchema != null)
+                config.put(CUSTOM_SCHEMA, customSchema);
             configs.add(config);
         }
         return configs;
