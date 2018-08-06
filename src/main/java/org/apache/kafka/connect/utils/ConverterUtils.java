@@ -30,8 +30,8 @@ public class ConverterUtils {
     while(itKeys.hasNext()){
       String key = itKeys.next();
       Object value = doc.get(key);
-      log.info("key_Struct: " + key);
-      log.info("value_Struct: " + doc.get(key));
+      log.debug("key_Struct: " + key);
+      log.debug("value_Struct: " + doc.get(key));
       Document generic = new Document(key, value);
       BsonDocument bsonDocument =
         generic.toBsonDocument(
@@ -144,19 +144,19 @@ public class ConverterUtils {
 
       //value isDocument
       else if(bsonValue.isDocument()){
-        log.info("key: {} isDocument", key);
+        log.debug("key: {} isDocument", key);
         schemaBuilder.field(key, createDynamicSchema((Map<String, Object>) value, skipId));
       }
 
       //value isInt64
       else if(bsonValue.isInt64()){
-        log.info("key: {} isInt64", key);
+        log.debug("key: {} isInt64", key);
         schemaBuilder.field(key, Schema.INT64_SCHEMA);
       }
 
       //value isInt32
       else if(bsonValue.isInt32()){
-        log.info("key: {} isInt32", key);
+        log.debug("key: {} isInt32", key);
         schemaBuilder.field(key, Schema.INT32_SCHEMA);
       }
 
