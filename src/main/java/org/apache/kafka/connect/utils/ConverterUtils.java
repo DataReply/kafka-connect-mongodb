@@ -101,6 +101,12 @@ public class ConverterUtils {
           continue;
         }
 
+        //value is undefined
+        else if(bsonValue.isNull()){
+          log.debug("key: {} is null", key);
+          continue;
+        }
+
         //value isString|isInt64|isInt32|isDouble|isBoolean
         else {
           customStruct.put(key, value);
@@ -178,6 +184,13 @@ public class ConverterUtils {
         log.debug("key: {} is undefined", key);
         continue;
       }
+
+      //value is undefined
+      else if(bsonValue.isNull()){
+        log.debug("key: {} is null", key);
+        continue;
+      }
+
       else{
         log.error("schema option not implemented");
         return null;
