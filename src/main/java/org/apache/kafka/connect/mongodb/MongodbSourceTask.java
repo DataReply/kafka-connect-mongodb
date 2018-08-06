@@ -1,12 +1,6 @@
 package org.apache.kafka.connect.mongodb;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.mongodb.MongoClient;
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -16,10 +10,15 @@ import org.apache.kafka.connect.mongodb.converter.StringStructConverter;
 import org.apache.kafka.connect.mongodb.converter.StructConverter;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
+import org.apache.kafka.connect.utils.ConverterUtils;
+import org.bson.BsonDocument;
 import org.bson.BsonTimestamp;
+import org.bson.BsonValue;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 /**
  * MongodbSourceTask is a Task that reads mutations from a mongodb for storage in Kafka.
@@ -41,6 +40,8 @@ public class MongodbSourceTask extends SourceTask {
 
     private MongodbReader reader;
 
+    private Boolean customSchema = false;
+
 
     Map<Map<String, String>, Map<String, Object>> offsets = new HashMap<>(0);
 
@@ -57,14 +58,14 @@ public class MongodbSourceTask extends SourceTask {
      */
     @Override
     public void start(Map<String, String> map) {
-    	if(map.containsKey(MongodbSourceConfig.PORT)){
-	        try {
-	            port = Integer.parseInt(map.get(MongodbSourceConfig.PORT));
-	        } catch (Exception e) {
-	            throw new ConnectException(MongodbSourceConfig.PORT + " config should be an Integer");
-	        }
-    	}
-    	
+        if(map.containsKey(MongodbSourceConfig.PORT)){
+            try {
+                port = Integer.parseInt(map.get(MongodbSourceConfig.PORT));
+            } catch (Exception e) {
+                throw new ConnectException(MongodbSourceConfig.PORT + " config should be an Integer");
+            }
+        }
+
         try {
             batchSize = Integer.parseInt(map.get(MongodbSourceConfig.BATCH_SIZE));
         } catch (Exception e) {
@@ -75,18 +76,26 @@ public class MongodbSourceTask extends SourceTask {
         topicPrefix = map.get(MongodbSourceConfig.TOPIC_PREFIX);
         uri = map.get(MongodbSourceConfig.URI);
         host = map.get(MongodbSourceConfig.HOST);
-        
+
         try{
             String structConverterClass = map.get(MongodbSourceConfig.CONVERTER_CLASS);
             if(structConverterClass == null || structConverterClass.isEmpty()){
-            	structConverterClass = StringStructConverter.class.getName();
+                structConverterClass = StringStructConverter.class.getName();
             }
             structConverter = (StructConverter) Class.forName(structConverterClass).newInstance();
         }
         catch(Exception e){
-        	throw new ConnectException(MongodbSourceConfig.CONVERTER_CLASS + " config should be a class of type StructConverter");
+            throw new ConnectException(MongodbSourceConfig.CONVERTER_CLASS + " config should be a class of type StructConverter");
         }
-        
+
+        try{
+            if(map.containsKey(MongodbSourceConfig.CUSTOM_SCHEMA))
+                customSchema = Boolean.parseBoolean(map.get(MongodbSourceConfig.CUSTOM_SCHEMA));
+        }
+        catch (Exception e){
+            throw new ConnectException(MongodbSourceConfig.CUSTOM_SCHEMA + " config should be a Boolean");
+        }
+
         databases = Arrays.asList(map.get(MongodbSourceConfig.DATABASES).split(","));
 
         log.trace("Creating schema");
@@ -98,24 +107,24 @@ public class MongodbSourceTask extends SourceTask {
             db = db.replaceAll("[\\s.]", "_");
             if (schemas.get(db) == null)
                 schemas.put(db,
-                        SchemaBuilder
-                                .struct()
-                                .name(schemaName.concat("_").concat(db))
-                                .field("timestamp", Schema.OPTIONAL_INT32_SCHEMA)
-                                .field("order", Schema.OPTIONAL_INT32_SCHEMA)
-                                .field("operation", Schema.OPTIONAL_STRING_SCHEMA)
-                                .field("database", Schema.OPTIONAL_STRING_SCHEMA)
-                                .field("object", Schema.OPTIONAL_STRING_SCHEMA)
-                                .build());
+                  SchemaBuilder
+                    .struct()
+                    .name(schemaName.concat("_").concat(db))
+                    .field("timestamp", Schema.OPTIONAL_INT32_SCHEMA)
+                    .field("order", Schema.OPTIONAL_INT32_SCHEMA)
+                    .field("operation", Schema.OPTIONAL_STRING_SCHEMA)
+                    .field("database", Schema.OPTIONAL_STRING_SCHEMA)
+                    .field("object", Schema.OPTIONAL_STRING_SCHEMA)
+                    .build());
         }
 
         loadOffsets();
-        
+
         if(uri != null){
-        	reader = new MongodbReader(uri, databases, batchSize, offsets);
+            reader = new MongodbReader(uri, databases, batchSize, offsets);
         }
         else{
-        	reader = new MongodbReader(host, port, databases, batchSize, offsets);
+            reader = new MongodbReader(host, port, databases, batchSize, offsets);
         }
         reader.run();
     }
@@ -130,12 +139,55 @@ public class MongodbSourceTask extends SourceTask {
     public List<SourceRecord> poll() throws InterruptException {
         List<SourceRecord> records = new ArrayList<>();
         while (!reader.isEmpty()) {
-        	Document message = reader.pool();
+            Document message = reader.pool();
             Struct messageStruct = getStruct(message);
             String topic = getTopic(message);
             String db = getDB(message);
             String timestamp = getTimestamp(message);
-            records.add(new SourceRecord(Collections.singletonMap("mongodb", db), Collections.singletonMap(db, timestamp), topic, messageStruct.schema(), messageStruct));
+            Object objectKey = ((Map<String, Object>) message.get("o")).get("_id");
+
+            //key is _id
+            if(customSchema){
+                //get the key object
+                BsonDocument bson = message
+                  .toBsonDocument(
+                    BsonDocument.class, MongoClient.getDefaultCodecRegistry());
+                BsonValue bsonId =  bson.get("o").asDocument().get("_id");
+                Schema keySchema = null;
+                Object key = null;
+                if(bsonId.isObjectId()){
+                    keySchema = Schema.STRING_SCHEMA;
+                    key = bsonId.asObjectId().getValue().toString();
+                }
+                else if(bsonId.isDocument()){
+                    keySchema = ConverterUtils.createDynamicSchema((Map<String, Object>) objectKey, false);
+                    key = ConverterUtils.createDynamicStruct(keySchema, (Map<String, Object>) objectKey, false);
+                }
+                else{
+                    keySchema = Schema.STRING_SCHEMA;
+                    key = String.valueOf(objectKey);
+                }
+
+                records.add(new SourceRecord(
+                  Collections.singletonMap("mongodb", db),
+                  Collections.singletonMap(db, timestamp),
+                  topic,
+                  keySchema,
+                  key,
+                  messageStruct.schema(),
+                  messageStruct));
+            }
+
+            //key null
+            else {
+                records.add(new SourceRecord(
+                  Collections.singletonMap("mongodb", db),
+                  Collections.singletonMap(db, timestamp),
+                  topic,
+                  messageStruct.schema(),
+                  messageStruct)
+                );
+            }
             log.trace(message.toString());
         }
 
@@ -148,9 +200,9 @@ public class MongodbSourceTask extends SourceTask {
      */
     @Override
     public void stop() {
-    	if(reader != null){
-    		reader.stop();
-    	}
+        if(reader != null){
+            reader.stop();
+        }
     }
 
     /**
@@ -163,10 +215,10 @@ public class MongodbSourceTask extends SourceTask {
         String database = ((String) message.get("ns")).replaceAll("[\\s.]", "_");
         if (topicPrefix != null && !topicPrefix.isEmpty()) {
             return new StringBuilder()
-                    .append(topicPrefix)
-                    .append("_")
-                    .append(database)
-                    .toString();
+              .append(topicPrefix)
+              .append("_")
+              .append(database)
+              .toString();
         }
         return database;
     }
@@ -190,10 +242,10 @@ public class MongodbSourceTask extends SourceTask {
     private String getTimestamp(Document message) {
         BsonTimestamp timestamp = (BsonTimestamp) message.get("ts");
         return new StringBuilder()
-                .append(timestamp.getTime())
-                .append("_")
-                .append(timestamp.getInc())
-                .toString();
+          .append(timestamp.getTime())
+          .append("_")
+          .append(timestamp.getInc())
+          .toString();
     }
 
     /**
@@ -203,8 +255,8 @@ public class MongodbSourceTask extends SourceTask {
      * @return message formatted as a Struct
      */
     private Struct getStruct(Document message) {
-    	final Schema schema = schemas.get(getDB(message).replaceAll("[\\s.]", "_"));
-    	return structConverter.toStruct(message, schema);
+        final Schema schema = schemas.get(getDB(message).replaceAll("[\\s.]", "_"));
+        return structConverter.toStruct(message, schema, customSchema);
     }
 
     /**

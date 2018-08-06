@@ -21,6 +21,7 @@ import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.BATCH_SIZE;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.TOPIC_PREFIX;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.CONVERTER_CLASS;
 import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.DATABASES;
+import static org.apache.kafka.connect.mongodb.MongodbSourceConfig.CUSTOM_SCHEMA;
 
 /**
  * MongodbSourceConnector implements the connector interface
@@ -39,6 +40,7 @@ public class MongodbSourceConnector extends SourceConnector {
     private String topicPrefix;
     private String converterClass;
     private String databases;
+    private String customSchema;
 
     /**
      * Get the version of this connector.
@@ -64,14 +66,14 @@ public class MongodbSourceConnector extends SourceConnector {
         if (uri == null || uri.isEmpty()){
             host = map.get(HOST);
             if (host == null || host.isEmpty()){
-            	throw new ConnectException("Missing " + HOST + "or " + URI +  " config");
+                throw new ConnectException("Missing " + HOST + "or " + URI +  " config");
             }
-        	
-        	port = map.get(PORT);
+
+            port = map.get(PORT);
             if (port == null || port.isEmpty()){
                 throw new ConnectException("Missing " + PORT + "or " + URI +  " config");
             }
-        }        
+        }
         schemaName = map.get(SCHEMA_NAME);
         if (schemaName == null || schemaName.isEmpty())
             throw new ConnectException("Missing " + SCHEMA_NAME + " config");
@@ -83,8 +85,14 @@ public class MongodbSourceConnector extends SourceConnector {
         databases = map.get(DATABASES);
 
         topicPrefix = map.get(TOPIC_PREFIX);
-        
+
         converterClass = map.get(CONVERTER_CLASS);
+
+        if(map.containsKey(CUSTOM_SCHEMA))
+            customSchema = map.get(CUSTOM_SCHEMA);
+        else
+            customSchema = null;
+
 
         LogUtils.dumpConfiguration(map, log);
     }
@@ -115,16 +123,18 @@ public class MongodbSourceConnector extends SourceConnector {
             Map<String, String> config = new HashMap<>();
             config.put(URI, uri);
             if(host!=null){
-            	config.put(HOST, host);
+                config.put(HOST, host);
             }
             if(port!=null){
-            	config.put(PORT, port);
+                config.put(PORT, port);
             }
             config.put(SCHEMA_NAME, schemaName);
             config.put(BATCH_SIZE, batchSize);
             config.put(TOPIC_PREFIX, topicPrefix);
             config.put(CONVERTER_CLASS, converterClass);
             config.put(DATABASES, StringUtils.join(dbsGrouped.get(i), ","));
+            if(customSchema != null)
+                config.put(CUSTOM_SCHEMA, customSchema);
             configs.add(config);
         }
         return configs;

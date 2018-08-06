@@ -29,15 +29,19 @@ public class MongodbSourceConfig extends AbstractConfig {
     public static final String CONVERTER_CLASS = "converter.class";
     private static final String CONVERTER_CLASS_DOC = "Converter class used to transform a mongodb oplog in a kafka message";
 
+    public static final String CUSTOM_SCHEMA = "custom.schema";
+    private static final String CUSTOM_SCHEMA_DOC = "Flag that tells if a custom schema will be obtained from the data";
+
     public static ConfigDef config = new ConfigDef()
-            .define(URI, Type.STRING, Importance.HIGH, URI_DOC)
-            .define(HOST, Type.STRING, Importance.HIGH, HOST_DOC)
-            .define(PORT, Type.INT, Importance.HIGH, PORT_DOC)
-            .define(BATCH_SIZE, Type.INT, Importance.HIGH, BATCH_SIZE_DOC)
-            .define(SCHEMA_NAME, Type.STRING, Importance.HIGH, SCHEMA_NAME_DOC)
-            .define(TOPIC_PREFIX, Type.STRING, Importance.LOW, TOPIC_PREFIX_DOC)
-            .define(CONVERTER_CLASS, Type.STRING, StringStructConverter.class.getName(), Importance.LOW, CONVERTER_CLASS_DOC)
-            .define(DATABASES, Type.STRING, Importance.LOW, DATABASES_DOC);
+      .define(URI, Type.STRING, Importance.HIGH, URI_DOC)
+      .define(HOST, Type.STRING, Importance.HIGH, HOST_DOC)
+      .define(PORT, Type.INT, Importance.HIGH, PORT_DOC)
+      .define(BATCH_SIZE, Type.INT, Importance.HIGH, BATCH_SIZE_DOC)
+      .define(SCHEMA_NAME, Type.STRING, Importance.HIGH, SCHEMA_NAME_DOC)
+      .define(TOPIC_PREFIX, Type.STRING, Importance.LOW, TOPIC_PREFIX_DOC)
+      .define(CUSTOM_SCHEMA, Type.BOOLEAN, false, Importance.LOW, CUSTOM_SCHEMA_DOC)
+      .define(CONVERTER_CLASS, Type.STRING, StringStructConverter.class.getName(), Importance.LOW, CONVERTER_CLASS_DOC)
+      .define(DATABASES, Type.STRING, Importance.LOW, DATABASES_DOC);
 
     public MongodbSourceConfig(Map<String, String> props) {
         super(config, props);
