@@ -4,10 +4,7 @@ import com.mongodb.MongoClient;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
-import org.bson.Document;
+import org.bson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +95,12 @@ public class ConverterUtils {
           customStruct.put(key, date.format(formatter));
         }
 
+        //value is undefined
+        else if(value instanceof BsonUndefined){
+          log.debug("key: {} is undefined", key);
+          continue;
+        }
+
         //value isString|isInt64|isInt32|isDouble|isBoolean
         else {
           customStruct.put(key, value);
@@ -169,8 +172,14 @@ public class ConverterUtils {
       else if(bsonValue.isBoolean()){
         schemaBuilder.field(key, Schema.BOOLEAN_SCHEMA);
       }
+
+      //value is undefined
+      else if(value instanceof BsonUndefined){
+        log.debug("key: {} is undefined", key);
+        continue;
+      }
       else{
-        log.error("array schema option not implemented");
+        log.error("schema option not implemented");
         return null;
       }
     }
